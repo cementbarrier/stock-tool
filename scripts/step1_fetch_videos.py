@@ -1,0 +1,256 @@
+# -*- coding: utf-8 -*-
+"""
+阶段1：B站API拉取当日最新视频
+读取 stock_up_list.txt，调用 B站 API 批量拉取每个 UP 主 24 小时内新视频
+"""
+
+import os
+import sys
+import json
+import time
+import hashlib
+import logging
+import requests
+from datetime import datetime, timedelta
+from pathlib import Path
+
+if getattr(sys, 'frozen', False):
+    PROJECT_ROOT = Path(sys._MEIPASS)
+else:
+    PROJECT_ROOT = Path(__file__).parent.parent
+from functools import reduce
+from urllib.parse import urlencode
+
+CONFIG_DIR = PROJECT_ROOT / "config"
+DATA_DIR = PROJECT_ROOT / "data"
+LOG_DIR = PROJECT_ROOT / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_DIR / "fetch.log", encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+def load_up_list():
+    """读取 UP 主列表配置文件（Excel）"""
+    import pandas as pd
+    up_list = []
+    config_path = CONFIG_DIR / "stock_up_list.xlsx"
+    if not config_path.exists():
+        logger.error(f"配置文件不存在: {config_path}")
+        return up_list
+
+    df = pd.read_excel(config_path)
+    for _, row in df.iterrows():
+        mid = str(int(row.iloc[0])) if not pd.isna(row.iloc[0]) else None
+        name = str(row.iloc[1]).strip() if not pd.isna(row.iloc[1]) else None
+        weight = int(row.iloc[2]) if not pd.isna(row.iloc[2]) else 1
+        if mid and name:
+            up_list.append({'mid': mid, 'name': name, 'weight': weight})
+    logger.info(f"加载 {len(up_list)} 位 UP 主")
+    return up_list
+
+
+def load_cookies():
+    """从 Netscape 格式 cookies 文件提取 SESSDATA 等关键值"""
+    cookie_path = CONFIG_DIR / "bilibili_cookies.txt"
+    cookies = {}
+    if not cookie_path.exists():
+        logger.error(f"Cookies 文件不存在: {cookie_path}")
+        return cookies
+
+    with open(cookie_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            if line.startswith('#') or not line.strip():
+                continue
+            parts = line.strip().split('\t')
+            if len(parts) >= 7:
+                cookies[parts[5]] = parts[6]
+
+    return cookies
+
+
+def build_headers(cookies):
+    """构建请求头"""
+    cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
+    return {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Cookie': cookie_str,
+        'Referer': 'https://space.bilibili.com/',
+    }
+
+
+# ---- WBI 签名 ----
+MIXIN_KEY_ENC_TAB = [
+    46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35,
+    27, 43, 5, 49, 33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13,
+    37, 48, 7, 16, 24, 55, 40, 61, 26, 17, 0, 1, 60, 51, 30, 4,
+    22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 52, 44, 34,
+]
+
+def get_mixin_key(orig: str) -> str:
+    return reduce(lambda s, i: s + orig[i], MIXIN_KEY_ENC_TAB, '')[:32]
+
+
+_wbi_keys_cache = {"img_key": "", "sub_key": "", "ts": 0}
+
+def get_wbi_keys(headers):
+    """获取 wbi 签名密钥，缓存 30 分钟"""
+    now = time.time()
+    if now - _wbi_keys_cache["ts"] < 1800 and _wbi_keys_cache["img_key"]:
+        return _wbi_keys_cache["img_key"], _wbi_keys_cache["sub_key"]
+
+    try:
+        resp = requests.get("https://api.bilibili.com/x/web-interface/nav", headers=headers, timeout=10)
+        data = resp.json().get("data", {})
+        wbi_img = data.get("wbi_img", {})
+        img_url = wbi_img.get("img_url", "")
+        sub_url = wbi_img.get("sub_url", "")
+        img_key = img_url.split("/")[-1].split(".")[0]
+        sub_key = sub_url.split("/")[-1].split(".")[0]
+        _wbi_keys_cache["img_key"] = img_key
+        _wbi_keys_cache["sub_key"] = sub_key
+        _wbi_keys_cache["ts"] = now
+        return img_key, sub_key
+    except Exception:
+        return "", ""
+
+
+def sign_params(params, img_key, sub_key):
+    """对参数进行 wbi 签名"""
+    mixin_key = get_mixin_key(img_key + sub_key)
+    params["wts"] = int(time.time())
+    sorted_params = sorted(params.items())
+    query = urlencode(sorted_params)
+    w_rid = hashlib.md5((query + mixin_key).encode()).hexdigest()
+    params["w_rid"] = w_rid
+    return params
+
+
+def get_up_videos(mid, headers, hours=24):
+    """拉取指定 UP 主最近 N 小时内的视频列表"""
+    params = {
+        'mid': mid,
+        'ps': 30,
+        'pn': 1,
+        'order': 'pubdate',
+    }
+
+    # WBI 签名
+    img_key, sub_key = get_wbi_keys(headers)
+    if img_key and sub_key:
+        params = sign_params(params, img_key, sub_key)
+
+    try:
+        resp = requests.get(
+            "https://api.bilibili.com/x/space/wbi/arc/search",
+            params=params, headers=headers, timeout=15
+        )
+        data = resp.json()
+        if data.get('code') != 0:
+            logger.warning(f"  API 返回错误 mid={mid}: {data.get('message')}")
+            return []
+
+        videos = data.get('data', {}).get('list', {}).get('vlist', [])
+        cutoff = datetime.now() - timedelta(hours=hours)
+
+        recent_videos = []
+        for v in videos:
+            pub_ts = v.get('created', 0)
+            pub_time = datetime.fromtimestamp(pub_ts)
+            if pub_time >= cutoff:
+                recent_videos.append({
+                    'aid': v.get('aid'),
+                    'bvid': v.get('bvid'),
+                    'title': v.get('title'),
+                    'description': v.get('description', ''),
+                    'pub_time': pub_time.strftime('%Y-%m-%d %H:%M:%S'),
+                    'duration': v.get('length', ''),
+                    'play': v.get('play', 0),
+                })
+
+        return recent_videos
+
+    except Exception as e:
+        logger.error(f"  拉取失败 mid={mid}: {e}")
+        return []
+
+
+def filter_stock_videos(videos):
+    """过滤：保留包含股票相关关键词的视频"""
+    keywords = [
+        '股票', '大盘', '赛道', '个股', '持仓', '建仓', '复盘',
+        'ETF', 'etf', 'A股', '涨停', '跌停', '板块', '行情',
+        '选股', '策略', '交易', '投资', '牛市', '熊市', '反弹',
+        '趋势', '支撑', '压力', '成交量', '资金', '北向',
+    ]
+    filtered = []
+    for v in videos:
+        title_lower = v['title'].lower()
+        if any(kw.lower() in title_lower for kw in keywords):
+            filtered.append(v)
+    return filtered
+
+
+def save_video_meta(videos, up_name):
+    """保存视频元信息到 JSON"""
+    today = datetime.now().strftime('%Y%m%d')
+    meta_dir = DATA_DIR / "videos" / today
+    meta_dir.mkdir(parents=True, exist_ok=True)
+    meta_path = meta_dir / f"{up_name}_{today}.json"
+    with open(meta_path, 'w', encoding='utf-8') as f:
+        json.dump(videos, f, ensure_ascii=False, indent=2)
+    return meta_path
+
+
+def main():
+    logger.info("=" * 50)
+    logger.info("开始拉取当日 UP 主新视频")
+    logger.info("=" * 50)
+
+    up_list = load_up_list()
+    if not up_list:
+        logger.error("UP 主列表为空，请在 config/stock_up_list.txt 中添加 UP 主")
+        return []
+
+    cookies = load_cookies()
+    if not cookies:
+        logger.error("Cookies 无效")
+        return []
+
+    headers = build_headers(cookies)
+    all_videos = []
+
+    for up in up_list:
+        logger.info(f"拉取 {up['name']} (mid={up['mid']}) ...")
+        time.sleep(0.5)  # 礼貌间隔
+
+        videos = get_up_videos(up['mid'], headers)
+        stock_videos = filter_stock_videos(videos)
+
+        for v in stock_videos:
+            v['up_name'] = up['name']
+            v['up_mid'] = up['mid']
+            v['up_weight'] = up['weight']
+
+        if stock_videos:
+            save_video_meta(stock_videos, up['name'])
+            all_videos.extend(stock_videos)
+            logger.info(f"  → 获取 {len(stock_videos)} 个相关视频 (共 {len(videos)} 个)")
+        else:
+            logger.info(f"  → 当日无相关视频")
+
+    logger.info(f"\n总计: {len(all_videos)} 个待处理视频")
+    return all_videos
+
+
+if __name__ == '__main__':
+    result = main()
+    # 输出 JSON 供下游模块使用
+    print(json.dumps(result, ensure_ascii=False, indent=2))

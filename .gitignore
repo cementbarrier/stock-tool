@@ -1,0 +1,31 @@
+# Build
+build/
+dist/
+*.spec
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# Temp & logs
+temp/
+logs/
+*_log.txt
+*_err.txt
+
+# Local config
+config/settings.json
+config/bilibili_cookies.txt
+
+# bili2text data
+.b2t/
+
+# OS
+Thumbs.db
+Desktop.ini

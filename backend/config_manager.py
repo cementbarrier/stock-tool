@@ -1,0 +1,63 @@
+"""
+配置管理：bili2text路径、Cookie、调试日志等
+"""
+import json
+import sys
+from pathlib import Path
+
+if getattr(sys, 'frozen', False):
+    CONFIG_DIR = Path.home() / ".stock_tool"
+else:
+    CONFIG_DIR = Path(__file__).parent.parent / "config"
+
+SETTINGS_FILE = CONFIG_DIR / "settings.json"
+
+DEFAULTS = {
+    "bili2text_dir": "D:\\bili2text",
+    "cookie_file": "D:\\bili2text\\.b2t\\cookies.txt",
+    "debug_log": "",
+}
+
+
+def load_settings():
+    """加载配置，空值回退到默认值"""
+    try:
+        with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+    merged = {}
+    for key in DEFAULTS:
+        merged[key] = data.get(key) if data.get(key) else DEFAULTS[key]
+    return merged
+
+
+def save_settings(settings: dict):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(settings, f, ensure_ascii=False, indent=2)
+
+
+def get_setting(key: str):
+    return load_settings().get(key, DEFAULTS.get(key, ""))
+
+
+def set_setting(key: str, value: str):
+    settings = load_settings()
+    settings[key] = value
+    save_settings(settings)
+
+
+def get_bili2text_path():
+    return Path(get_setting("bili2text_dir"))
+
+
+def get_debug_log_path():
+    p = get_setting("debug_log")
+    if p:
+        return Path(p)
+    return CONFIG_DIR / "debug.log"
+
+
+def get_cookie_path():
+    return get_setting("cookie_file")

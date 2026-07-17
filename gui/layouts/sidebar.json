@@ -1,0 +1,396 @@
+[
+  {
+    "name": "side bar",
+    "type": "SECTION",
+    "x": 0,
+    "y": 0,
+    "width": 198,
+    "height": 665,
+    "fills": [
+      {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1
+        },
+        "boundVariables": {}
+      }
+    ],
+    "strokes": [
+      {
+        "type": "SOLID",
+        "opacity": 0.10000000149011612,
+        "blendMode": "NORMAL",
+        "color": "#000000"
+      }
+    ],
+    "cornerRadius": 2,
+    "children": [
+      {
+        "name": "Sidebar",
+        "type": "FRAME",
+        "x": 0,
+        "y": 0,
+        "width": 198,
+        "height": 666,
+        "fills": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 1,
+              "g": 1,
+              "b": 1
+            },
+            "boundVariables": {}
+          }
+        ],
+        "strokes": [
+          {
+            "type": "SOLID",
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": "#e0e0e0"
+          }
+        ],
+        "children": [
+          {
+            "name": "List",
+            "type": "FRAME",
+            "x": 8,
+            "y": 82,
+            "width": 183,
+            "height": 144,
+            "spans": {
+              "width": "1 wider"
+            },
+            "children": [
+              {
+                "name": "Menu item",
+                "type": "FRAME",
+                "x": 0,
+                "y": 0,
+                "width": 183,
+                "height": 40,
+                "spans": {
+                  "width": "1 wider"
+                },
+                "cornerRadius": 8,
+                "children": [
+                  {
+                    "name": "Discover",
+                    "type": "TEXT",
+                    "x": 16,
+                    "y": 8,
+                    "width": 208,
+                    "height": 24,
+                    "spans": {},
+                    "fills": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 0,
+                          "g": 0,
+                          "b": 0
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "characters": "Discover",
+                    "fontSize": 16,
+                    "fontName": {
+                      "family": "Inter",
+                      "style": "Semi Bold"
+                    },
+                    "textAlignHorizontal": "LEFT",
+                    "textAlignVertical": "CENTER",
+                    "lineHeight": {
+                      "unit": "PERCENT",
+                      "value": 150
+                    },
+                    "tailwind": {
+                      "width": "w-208",
+                      "height": "h-24",
+                      "margin-left": "ml-16",
+                      "font-size": "text-16"
+                    }
+                  }
+                ],
+                "layoutMode": "HORIZONTAL",
+                "primaryAxisSizingMode": "FIXED",
+                "counterAxisSizingMode": "FIXED",
+                "primaryAxisAlignItems": "MIN",
+                "counterAxisAlignItems": "CENTER",
+                "paddingRight": 16,
+                "paddingLeft": 16,
+                "itemSpacing": 16,
+                "tailwind": {
+                  "width": "span-w-1-wider",
+                  "height": "h-40",
+                  "padding": "px-16",
+                  "flex": "flex gap-16",
+                  "justify-content": "justify-start",
+                  "align-items": "items-center"
+                }
+              },
+              {
+                "name": "Button",
+                "type": "FRAME",
+                "x": 0,
+                "y": 52,
+                "width": 183,
+                "height": 40,
+                "spans": {
+                  "width": "1 wider"
+                },
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.9697690010070801,
+                      "g": 0.9697690010070801,
+                      "b": 0.9697690010070801
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "cornerRadius": 8,
+                "children": [
+                  {
+                    "name": "单视频解析",
+                    "type": "TEXT",
+                    "x": 16,
+                    "y": 8,
+                    "width": 151,
+                    "height": 24,
+                    "spans": {
+                      "width": "1"
+                    },
+                    "fills": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 0,
+                          "g": 0,
+                          "b": 0
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "characters": "单视频解析",
+                    "fontSize": 16,
+                    "fontName": {
+                      "family": "Inter",
+                      "style": "Medium"
+                    },
+                    "textAlignHorizontal": "LEFT",
+                    "textAlignVertical": "CENTER",
+                    "lineHeight": {
+                      "unit": "PERCENT",
+                      "value": 150
+                    },
+                    "tailwind": {
+                      "width": "span-w-1",
+                      "height": "h-24",
+                      "margin-left": "ml-16",
+                      "font-size": "text-16"
+                    }
+                  }
+                ],
+                "layoutMode": "HORIZONTAL",
+                "primaryAxisSizingMode": "FIXED",
+                "counterAxisSizingMode": "FIXED",
+                "primaryAxisAlignItems": "MIN",
+                "counterAxisAlignItems": "CENTER",
+                "paddingRight": 16,
+                "paddingLeft": 16,
+                "itemSpacing": 16,
+                "tailwind": {
+                  "width": "span-w-1-wider",
+                  "height": "h-40",
+                  "padding": "px-16",
+                  "flex": "flex gap-16",
+                  "justify-content": "justify-start",
+                  "align-items": "items-center"
+                }
+              },
+              {
+                "name": "Button",
+                "type": "FRAME",
+                "x": 0,
+                "y": 104,
+                "width": 183,
+                "height": 40,
+                "spans": {
+                  "width": "1 wider"
+                },
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 1,
+                      "g": 1,
+                      "b": 1
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "cornerRadius": 8,
+                "children": [
+                  {
+                    "name": "定期跟踪",
+                    "type": "TEXT",
+                    "x": 16,
+                    "y": 8,
+                    "width": 151,
+                    "height": 24,
+                    "spans": {
+                      "width": "1"
+                    },
+                    "fills": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 0,
+                          "g": 0,
+                          "b": 0
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "characters": "定期跟踪",
+                    "fontSize": 16,
+                    "fontName": {
+                      "family": "Inter",
+                      "style": "Medium"
+                    },
+                    "textAlignHorizontal": "LEFT",
+                    "textAlignVertical": "CENTER",
+                    "lineHeight": {
+                      "unit": "PERCENT",
+                      "value": 150
+                    },
+                    "tailwind": {
+                      "width": "span-w-1",
+                      "height": "h-24",
+                      "margin-left": "ml-16",
+                      "font-size": "text-16"
+                    }
+                  }
+                ],
+                "layoutMode": "HORIZONTAL",
+                "primaryAxisSizingMode": "FIXED",
+                "counterAxisSizingMode": "FIXED",
+                "primaryAxisAlignItems": "MIN",
+                "counterAxisAlignItems": "CENTER",
+                "paddingRight": 16,
+                "paddingLeft": 16,
+                "itemSpacing": 16,
+                "tailwind": {
+                  "width": "span-w-1-wider",
+                  "height": "h-40",
+                  "padding": "px-16",
+                  "flex": "flex gap-16",
+                  "justify-content": "justify-start",
+                  "align-items": "items-center"
+                }
+              }
+            ],
+            "layoutMode": "VERTICAL",
+            "primaryAxisSizingMode": "AUTO",
+            "counterAxisSizingMode": "FIXED",
+            "primaryAxisAlignItems": "MIN",
+            "counterAxisAlignItems": "MIN",
+            "itemSpacing": 12,
+            "tailwind": {
+              "width": "span-w-1-wider",
+              "height": "h-144",
+              "margin-left": "ml-8",
+              "flex": "flex flex-col gap-12",
+              "justify-content": "justify-start",
+              "align-items": "items-start"
+            }
+          },
+          {
+            "name": "Title",
+            "type": "TEXT",
+            "x": 24,
+            "y": 24,
+            "width": 80,
+            "height": 30,
+            "spans": {},
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0
+                },
+                "boundVariables": {}
+              }
+            ],
+            "characters": "观点采集",
+            "fontSize": 20,
+            "fontName": {
+              "family": "Inter",
+              "style": "Semi Bold"
+            },
+            "textAlignHorizontal": "LEFT",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "PERCENT",
+              "value": 150
+            },
+            "tailwind": {
+              "width": "w-80",
+              "height": "h-30",
+              "margin-left": "ml-24",
+              "font-size": "text-20"
+            }
+          }
+        ],
+        "layoutMode": "NONE",
+        "primaryAxisSizingMode": "AUTO",
+        "counterAxisSizingMode": "FIXED",
+        "primaryAxisAlignItems": "MIN",
+        "counterAxisAlignItems": "MIN",
+        "tailwind": {
+          "width": "w-198",
+          "height": "h-666",
+          "flex": "flex",
+          "justify-content": "justify-start",
+          "align-items": "items-start"
+        }
+      }
+    ],
+    "tailwind": {
+      "width": "w-198",
+      "height": "h-665"
+    }
+  }
+]
