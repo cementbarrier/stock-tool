@@ -249,7 +249,7 @@ def button_3_clicked():
         print(f"保存路径已选: {path}")
 
 def button_4_clicked():
-    global cancel_event_1
+    global cancel_event_1, cancel_event_summary
     url = get_entry_1_text().strip()
     if not url:
         messagebox.showwarning("提示", "请先输入视频链接")
@@ -258,8 +258,17 @@ def button_4_clicked():
         messagebox.showwarning("提示", "请先选择保存路径")
         return
 
+    # 中断正在进行的 AI 摘要生成
+    cancel_event_summary.set()
+
     # 重置取消事件
     cancel_event_1.clear()
+
+    # 隐藏旧的摘要结果
+    summary_result_1.place_forget()
+    summary_result_1.config(text="")
+    summary_btn_1.place_forget()
+    price_label_1.place_forget()
 
     # 显示进度 UI，隐藏解析按钮
     button_4.place_forget()
@@ -301,6 +310,18 @@ def _finish_parse_1(success, msg, bv="", path=""):
     progress_label_1.configure(text=f"  {'✅' if success else '❌'} {msg}")
     button_4.place(x=460, y=91, width=155, height=40)
 
+    # 无论成功与否，先隐藏旧的摘要结果
+    summary_result = getattr(_finish_parse_1, "summary_result", None)
+    if summary_result:
+        summary_result.config(text="")
+        summary_result.place_forget()
+
+    if not success:
+        # 解析失败或取消，中断正在进行的 AI 摘要
+        cancel_event_summary.set()
+        summary_btn_1.place_forget()
+        price_label_1.place_forget()
+
     if success and bv and path:
         last_parsed_bvid = bv
         last_transcript_path_var = path
@@ -313,10 +334,6 @@ def _finish_parse_1(success, msg, bv="", path=""):
         summary_btn = getattr(_finish_parse_1, "summary_btn", None)
         if summary_btn:
             summary_btn.place(x=30, y=530, width=180, height=36)
-        summary_result = getattr(_finish_parse_1, "summary_result", None)
-        if summary_result:
-            summary_result.config(text="")
-            summary_result.place_forget()
 
 
 def button_5_clicked():
@@ -759,6 +776,7 @@ def create_main_window():
 
     # ── 进度区域（页面1）──
     cancel_event_1 = Event()
+    cancel_event_summary = Event()  # 中断 AI 摘要生成
     progress_label_1 = Label(
         page_frame_1, text="", fg="#555555", bg="#FFFFFF",
         font=("Inter", 11), anchor="w"
@@ -777,9 +795,12 @@ def create_main_window():
     )
 
     def _do_summary():
-        global last_parsed_bvid, last_transcript_path_var
+        global last_parsed_bvid, last_transcript_path_var, cancel_event_summary
         if not last_parsed_bvid or not last_transcript_path_var:
             return
+        # 重置摘要取消事件
+        cancel_event_summary.clear()
+        
         try:
             with open(last_transcript_path_var, "r", encoding="utf-8") as f:
                 transcript = f.read()
@@ -810,15 +831,21 @@ def create_main_window():
         summary_result_1.place(x=30, y=572, width=585, height=60)
 
         def run():
+            if cancel_event_summary.is_set():
+                return  # LLM 调用前已取消
             res = single_summary_client.summarize_single(
                 last_parsed_bvid, transcript, force=True
             )
+            if cancel_event_summary.is_set():
+                return  # LLM 返回后已取消，丢弃结果
             if res.get("status") == "done":
                 window.after(0, lambda: _show_summary(res["summary"]))
             else:
                 window.after(0, lambda: _show_summary(f"错误: {res.get('error', '未知')}"))
 
         def _show_summary(text):
+            if cancel_event_summary.is_set():
+                return  # 已取消，不显示
             summary_btn_1.config(text="生成 AI 摘要", state="normal")
             summary_result_1.config(text=text)
             summary_result_1.place(x=30, y=572, width=585, height=60)
