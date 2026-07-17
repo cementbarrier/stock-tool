@@ -7,7 +7,8 @@ import pandas as pd
 from pathlib import Path
 
 if getattr(sys, 'frozen', False):
-    PROJECT_ROOT = Path(sys._MEIPASS)
+    # EXE 所在目录持久化，而非 sys._MEIPASS 临时目录
+    PROJECT_ROOT = Path(sys.executable).parent
 else:
     PROJECT_ROOT = Path(__file__).parent.parent
 
