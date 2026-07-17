@@ -2,11 +2,11 @@
 
 
 a = Analysis(
-    ['gui\\build\\gui.py'],
+    ['E:\\stock-tool\\gui\\build\\gui.py'],
     pathex=[],
     binaries=[],
-    datas=[('scripts', 'scripts'), ('gui\\build\\assets', 'gui\\build\\assets'), ('config', 'config'), ('backend', 'backend')],
-    hiddenimports=['backend.config_manager', 'backend.single_parser', 'backend.batch_parser', 'backend.up_manager', 'pandas', 'openpyxl', 'requests', 'PIL', 'step1_fetch_videos', 'backend.llm_client', 'backend.time_price_judge', 'backend.task_queue_manager', 'backend.valley_scheduler', 'backend.single_summary_client'],
+    datas=[('backend', 'backend')],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

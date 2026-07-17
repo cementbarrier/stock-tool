@@ -5,6 +5,7 @@ dist/
 
 # Python
 venv/
+runtime/
 __pycache__/
 *.pyc
 *.pyo
