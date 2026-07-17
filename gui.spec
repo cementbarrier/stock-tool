@@ -3,10 +3,10 @@
 
 a = Analysis(
     ['E:\\stock-tool\\gui\\build\\gui.py'],
-    pathex=[],
+    pathex=['scripts'],
     binaries=[],
-    datas=[('backend', 'backend'), ('scripts', 'scripts')],
-    hiddenimports=['step1_fetch_videos', 'step2_download_audio', 'step3_transcribe', 'step4_extract_stocks', 'step5_analyze', 'backend.config_manager', 'backend.llm_client', 'backend.single_parser', 'backend.batch_parser', 'backend.up_manager', 'backend.single_summary_client', 'backend.task_queue_manager', 'backend.time_price_judge', 'backend.valley_scheduler'],
+    datas=[('backend', 'backend'), ('scripts', 'scripts'), ('gui\\build\\assets', 'gui\\build\\assets')],
+    hiddenimports=['requests', 'step1_fetch_videos', 'step2_download_audio', 'step3_transcribe', 'step4_extract_stocks', 'step5_analyze', 'backend.config_manager', 'backend.llm_client', 'backend.single_parser', 'backend.batch_parser', 'backend.up_manager', 'backend.single_summary_client', 'backend.task_queue_manager', 'backend.time_price_judge', 'backend.valley_scheduler'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
