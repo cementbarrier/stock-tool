@@ -19,6 +19,7 @@ DEFAULTS = {
     "llm_provider": "deepseek",
     "llm_api_key": "",
     "llm_model": "deepseek-chat",
+    "valley_scheduler_enabled": "true",
 }
 
 
