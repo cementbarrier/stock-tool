@@ -47,6 +47,6 @@ if %ERRORLEVEL% neq 0 (
 echo.
 echo [√] 环境初始化完成！
 echo.
-echo 打包: runtime\python.exe -m PyInstaller --onefile --windowed --name gui --add-data "backend;backend" --add-data "scripts;scripts" --hidden-import step1_fetch_videos --hidden-import step2_download_audio --hidden-import step3_transcribe --hidden-import step4_extract_stocks --hidden-import step5_analyze --hidden-import backend.config_manager --hidden-import backend.llm_client --hidden-import backend.single_parser --hidden-import backend.batch_parser --hidden-import backend.up_manager --hidden-import backend.single_summary_client --hidden-import backend.task_queue_manager --hidden-import backend.time_price_judge --hidden-import backend.valley_scheduler gui\build\gui.py
+echo 打包: runtime\python.exe -m PyInstaller --onefile --windowed --name gui --paths scripts --add-data "backend;backend" --add-data "scripts;scripts" --hidden-import requests --hidden-import step1_fetch_videos --hidden-import step2_download_audio --hidden-import step3_transcribe --hidden-import step4_extract_stocks --hidden-import step5_analyze --hidden-import backend.config_manager --hidden-import backend.llm_client --hidden-import backend.single_parser --hidden-import backend.batch_parser --hidden-import backend.up_manager --hidden-import backend.single_summary_client --hidden-import backend.task_queue_manager --hidden-import backend.time_price_judge --hidden-import backend.valley_scheduler gui\build\gui.py
 echo.
 pause
