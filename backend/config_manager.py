@@ -16,6 +16,9 @@ DEFAULTS = {
     "bili2text_dir": "D:\\bili2text",
     "cookie_file": "D:\\bili2text\\.b2t\\cookies.txt",
     "debug_log": "",
+    "llm_provider": "deepseek",
+    "llm_api_key": "",
+    "llm_model": "deepseek-chat",
 }
 
 
