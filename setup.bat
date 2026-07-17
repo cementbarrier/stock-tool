@@ -16,7 +16,7 @@ if exist "%RUNTIME_DIR%\python.exe" (
     goto :install_deps
 )
 
-echo [1/3] 下载 Python 3.11.9（完整版，含 tkinter）...
+echo [1/3] 下载 Python 3.11.9...
 powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe' -OutFile '%TEMP%\python-3.11.9-amd64.exe' -UseBasicParsing"
 if %ERRORLEVEL% neq 0 (
     echo [×] 下载失败，请检查网络连接
@@ -47,7 +47,6 @@ if %ERRORLEVEL% neq 0 (
 echo.
 echo [√] 环境初始化完成！
 echo.
-echo 打包: runtime\python.exe -m PyInstaller --onefile --windowed --name gui --add-data "backend;backend" gui\build\gui.py
-echo 运行: dist\gui.exe
+echo 打包: runtime\python.exe -m PyInstaller --onefile --windowed --name gui --add-data "backend;backend" --add-data "scripts;scripts" --hidden-import step1_fetch_videos --hidden-import step2_download_audio --hidden-import step3_transcribe --hidden-import step4_extract_stocks --hidden-import step5_analyze --hidden-import backend.config_manager --hidden-import backend.llm_client --hidden-import backend.single_parser --hidden-import backend.batch_parser --hidden-import backend.up_manager --hidden-import backend.single_summary_client --hidden-import backend.task_queue_manager --hidden-import backend.time_price_judge --hidden-import backend.valley_scheduler gui\build\gui.py
 echo.
 pause
