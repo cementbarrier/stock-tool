@@ -319,8 +319,12 @@ def _finish_parse_1(success, msg, bv="", path=""):
     if not success:
         # 解析失败或取消，中断正在进行的 AI 摘要
         cancel_event_summary.set()
-        summary_btn_1.place_forget()
-        price_label_1.place_forget()
+        summary_btn = getattr(_finish_parse_1, "summary_btn", None)
+        if summary_btn:
+            summary_btn.place_forget()
+        price_label = getattr(_finish_parse_1, "price_label", None)
+        if price_label:
+            price_label.place_forget()
 
     if success and bv and path:
         last_parsed_bvid = bv
@@ -557,7 +561,8 @@ def create_main_window():
     global button_1, button_2, button_3, entry_1, button_4
     global treeview_1, button_5, button_6, button_add, button_delete, canvas, canvas_page_2, entry_batch_path_text
     global page_frame_2, treeview_1_cols, image_1
-    global progress_label_1, progress_bar_1, button_stop_1, cancel_event_1
+    global progress_label_1, progress_bar_1, button_stop_1, cancel_event_1, cancel_event_summary
+    global summary_result_1, summary_btn_1, price_label_1
     global progress_label_2, progress_bar_2, button_stop_2, cancel_event_2
     window = Tk()
     window.title("JSON Generated GUI")
