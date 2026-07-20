@@ -110,6 +110,13 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None)
 
     batch_summary_path = _generate_batch_summary(save_dir, transcribe_success)
 
+    # ── 邮件通知 ──
+    try:
+        from backend.notifier import notify_batch_done
+        notify_batch_done(save_dir, total_ok, len(results), batch_summary_path)
+    except Exception:
+        pass
+
     if callback:
         done_msg = f"批量解析完成：转写 {total_ok}/{len(results)} 个视频"
         if batch_summary_path:

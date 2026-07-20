@@ -22,6 +22,13 @@ DEFAULTS = {
     "llm_model": "deepseek-chat",
     "valley_scheduler_enabled": "true",
     "batch_save_path": "",
+    # ── 邮件通知 ──
+    "email_enabled": "false",
+    "email_smtp_server": "smtp.qq.com",
+    "email_smtp_port": "465",
+    "email_sender": "",
+    "email_auth_code": "",
+    "email_receiver": "",
 }
 
 

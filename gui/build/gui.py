@@ -157,7 +157,8 @@ def _config_get_display(key):
     return val if val else "（未设置）"
 
 
-def _config_refresh_all(canvas, b2t_id, cookie_id, log_id, provider_combo, api_key_entry, model_combo):
+def _config_refresh_all(canvas, b2t_id, cookie_id, log_id, provider_combo, api_key_entry, model_combo,
+                        email_sender_entry=None, email_auth_entry=None):
     """刷新配置页面所有字段显示"""
     for text_id, key in [
         (b2t_id, "bili2text_dir"),
@@ -183,6 +184,14 @@ def _config_refresh_all(canvas, b2t_id, cookie_id, log_id, provider_combo, api_k
     model = config_manager.get_setting("llm_model") or ""
     if model:
         model_combo.set(model)
+
+    # 邮件通知
+    if email_sender_entry is not None:
+        email_sender_entry.delete(0, "end")
+        email_sender_entry.insert(0, config_manager.get_setting("email_sender") or "")
+    if email_auth_entry is not None:
+        email_auth_entry.delete(0, "end")
+        email_auth_entry.insert(0, config_manager.get_setting("email_auth_code") or "")
 
 
 def _config_browse_dir(canvas, text_id, setting_key):
@@ -223,7 +232,8 @@ def _config_provider_changed(provider_combo, model_combo):
     model_combo.set("")
 
 
-def _config_save_all(provider_combo, api_key_entry, model_combo):
+def _config_save_all(provider_combo, api_key_entry, model_combo,
+                     email_sender_entry=None, email_auth_entry=None, email_enabled_var=None):
     """保存配置"""
     PROVIDER_MAP = {"DeepSeek": "deepseek", "火山方舟/豆包": "volcengine"}
     selected = provider_combo.get()
@@ -237,6 +247,14 @@ def _config_save_all(provider_combo, api_key_entry, model_combo):
     model = model_combo.get().strip()
     if model:
         config_manager.set_setting("llm_model", model)
+
+    # 邮件通知
+    if email_sender_entry is not None:
+        config_manager.set_setting("email_sender", email_sender_entry.get().strip())
+    if email_auth_entry is not None:
+        config_manager.set_setting("email_auth_code", email_auth_entry.get().strip())
+    if email_enabled_var is not None:
+        config_manager.set_setting("email_enabled", "true" if email_enabled_var.get() else "false")
 
     messagebox.showinfo("保存成功", "配置已保存")
 
@@ -1548,6 +1566,65 @@ def create_main_window():
 
     _refresh_queue_status()
 
+    # ── 通知提醒（QQ邮箱）──
+    canvas_page_3.create_text(
+        30, 580,
+        anchor="nw",
+        text="通知提醒",
+        fill="#888888",
+        font=("Inter", 13 * -1, "bold")
+    )
+
+    email_enabled_var = BooleanVar(value=False)
+    if config_manager.get_setting("email_enabled") == "true":
+        email_enabled_var.set(True)
+
+    email_check = Checkbutton(
+        page_frame_3, text="启用邮件通知（QQ邮箱→微信）", variable=email_enabled_var,
+        bg="#FFFFFF", font=("Inter", 12),
+        command=lambda: config_manager.set_setting(
+            "email_enabled", "true" if email_enabled_var.get() else "false")
+    )
+    email_check.place(x=30, y=602)
+
+    canvas_page_3.create_text(30, 630, anchor="nw", text="QQ邮箱地址",
+        fill="#000000", font=("Inter", 12 * -1, "normal"))
+    email_sender_entry = Entry(
+        page_frame_3, bd=1, relief="solid",
+        bg="#FFFFFF", fg="#000000", font=("Inter", 12)
+    )
+    email_sender_entry.place(x=30, y=648, width=200, height=24)
+
+    canvas_page_3.create_text(240, 630, anchor="nw", text="授权码",
+        fill="#000000", font=("Inter", 12 * -1, "normal"))
+    email_auth_entry = Entry(
+        page_frame_3, show="*", bd=1, relief="solid",
+        bg="#FFFFFF", fg="#000000", font=("Inter", 12)
+    )
+    email_auth_entry.place(x=240, y=648, width=180, height=24)
+
+    # 测试发送按钮
+    def _test_email():
+        from backend.notifier import send_notification
+        ok = send_notification(
+            "[股票工具] 测试通知",
+            f"这是一条测试通知，发送时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n如果你在微信收到此消息，说明配置成功。",
+        )
+        if ok:
+            messagebox.showinfo("发送成功", "测试邮件已发出，请检查QQ邮箱（微信）")
+        else:
+            messagebox.showerror("发送失败", "请检查授权码、邮箱地址是否正确\n或开启 SMTP 服务")
+
+    Button(
+        page_frame_3, text="测试发送", command=_test_email,
+        bg="#2196F3", fg="#FFFFFF", font=("Inter", 11, "normal"),
+        borderwidth=0, highlightthickness=0,
+        relief="flat", activebackground="#1976D2", cursor="hand2"
+    ).place(x=430, y=648, width=80, height=24)
+
+    # 调整画布高度以容纳新增的「通知提醒」模块
+    canvas_page_3.config(height=686)
+
     # ── 保存按钮 ──
     Button(
         page_frame_3,
@@ -1557,16 +1634,18 @@ def create_main_window():
         font=("Inter", 16, "normal"),
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: _config_save_all(provider_combo, api_key_entry, model_combo),
+        command=lambda: _config_save_all(provider_combo, api_key_entry, model_combo,
+            email_sender_entry, email_auth_entry, email_enabled_var),
         relief="flat",
         activebackground="#333333",
         cursor="hand2"
-    ).place(x=30, y=595, width=155, height=40)
+    ).place(x=30, y=720, width=155, height=40)
 
     # 页面加载时刷新
     _config_refresh_all(canvas_page_3,
         b2t_path_text, cookie_path_text, debug_log_path_text,
-        provider_combo, api_key_entry, model_combo)
+        provider_combo, api_key_entry, model_combo,
+        email_sender_entry, email_auth_entry)
     _refresh_queue_status()
 
     # ── 进度区域（页面2）──
