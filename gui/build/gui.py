@@ -50,6 +50,13 @@ try:
 except ImportError:
     HAS_PIL = False
 
+try:
+    import pystray
+    from PIL import ImageDraw
+    HAS_TRAY = True
+except ImportError:
+    HAS_TRAY = False
+
 if getattr(sys, 'frozen', False):
     OUTPUT_PATH = Path(sys._MEIPASS)
     ASSETS_PATH = OUTPUT_PATH / "gui" / "build" / "assets" / "frame0"
@@ -640,6 +647,83 @@ def delete_selected():
     reapply_treeview_tags()
 
 
+# ============================================================
+#  托盘功能
+# ============================================================
+_tray_icon = None
+_should_exit = False
+_handling_minimize = False
+
+
+def _create_tray_image():
+    """生成托盘图标（64x64 绿色K线风格）"""
+    img = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([8, 8, 56, 56], fill=(34, 139, 34), outline=(0, 100, 0), width=2)
+    draw.line([(20, 42), (30, 26), (38, 36), (48, 20)], fill=(255, 255, 255), width=4)
+    return img
+
+
+def _restore_window(icon, item=None):
+    """从托盘恢复主窗口"""
+    global _tray_icon, _handling_minimize
+    _handling_minimize = False
+    if _tray_icon:
+        _tray_icon.stop()
+        _tray_icon = None
+    window.deiconify()
+    window.state('normal')
+    window.lift()
+    window.focus_force()
+
+
+def _quit_app(icon, item=None):
+    """彻底退出程序"""
+    global _tray_icon, _should_exit
+    _should_exit = True
+    if _tray_icon:
+        _tray_icon.stop()
+        _tray_icon = None
+    try:
+        valley_scheduler.stop()
+    except Exception:
+        pass
+    window.destroy()
+
+
+def _hide_to_tray():
+    """将窗口隐藏到托盘"""
+    global _tray_icon
+    if _tray_icon is not None:
+        return
+    window.withdraw()
+    if HAS_TRAY:
+        menu = pystray.Menu(
+            pystray.MenuItem('显示', _restore_window, default=True),
+            pystray.MenuItem('退出', _quit_app),
+        )
+        _tray_icon = pystray.Icon('stock_tool', _create_tray_image(), '股票工具', menu)
+        threading.Thread(target=_tray_icon.run, daemon=True).start()
+
+
+def _on_window_close():
+    """关闭窗口时最小化到托盘"""
+    if _should_exit:
+        _quit_app(None)
+        return
+    _hide_to_tray()
+
+
+def _on_unmap(event):
+    """捕获最小化事件"""
+    global _handling_minimize
+    if _handling_minimize or _should_exit:
+        return
+    if event.widget is window and window.state() == 'iconic':
+        _handling_minimize = True
+        _hide_to_tray()
+
+
 def create_main_window():
     global button_1, button_2, button_3, entry_1, button_4
     global treeview_1, button_5, button_6, button_add, button_delete, canvas, canvas_page_2, entry_batch_path_text
@@ -648,10 +732,15 @@ def create_main_window():
     global summary_result_1, summary_btn_1, price_label_1
     global progress_label_2, progress_bar_2, button_stop_2, cancel_event_2
     window = Tk()
-    window.title("JSON Generated GUI")
+    window.title("股票工具")
     window.geometry("994x666")
     window.configure(bg="#FFFFFF")
     center_window(window, 994, 666)
+
+    # 托盘：点击关闭/最小化时隐藏到托盘
+    if HAS_TRAY:
+        window.protocol('WM_DELETE_WINDOW', _on_window_close)
+        window.bind('<Unmap>', _on_unmap, add='+')
 
     canvas = Canvas(
         window,
