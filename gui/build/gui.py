@@ -235,7 +235,10 @@ def _config_provider_changed(provider_combo, model_combo):
     internal = PROVIDER_MAP.get(selected, "deepseek")
     config_manager.set_setting("llm_provider", internal)
     _update_model_options(provider_combo, model_combo)
-    model_combo.set("")
+    if selected == "火山方舟/豆包":
+        model_combo.set("doubao-1.5-pro-32k")
+    else:
+        model_combo.set("deepseek-chat")
 
 
 def _config_save_all(provider_combo, api_key_entry, model_combo,
@@ -243,16 +246,13 @@ def _config_save_all(provider_combo, api_key_entry, model_combo,
     """保存配置"""
     PROVIDER_MAP = {"DeepSeek": "deepseek", "火山方舟/豆包": "volcengine"}
     selected = provider_combo.get()
-    if selected:
-        config_manager.set_setting("llm_provider", PROVIDER_MAP.get(selected, "deepseek"))
+    config_manager.set_setting("llm_provider", PROVIDER_MAP.get(selected, "deepseek"))
 
     api_key = api_key_entry.get().strip()
-    if api_key:
-        config_manager.set_setting("llm_api_key", api_key)
+    config_manager.set_setting("llm_api_key", api_key)
 
     model = model_combo.get().strip()
-    if model:
-        config_manager.set_setting("llm_model", model)
+    config_manager.set_setting("llm_model", model)
 
     # 邮件通知
     if email_sender_entry is not None:
@@ -716,10 +716,12 @@ def _quit_app(icon, item=None):
 
 
 def _hide_to_tray():
-    """将窗口隐藏到托盘（托盘图标已初始化则直接隐藏）"""
+    """将窗口隐藏到托盘（托盘图标不存在时自动重建）"""
     global _tray_icon
-    if _tray_icon is None and not HAS_TRAY:
+    if not HAS_TRAY:
         return
+    if _tray_icon is None:
+        _init_tray_icon()
     window.withdraw()
 
 
