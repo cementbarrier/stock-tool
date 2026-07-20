@@ -1734,4 +1734,18 @@ window = create_main_window()
 valley_scheduler.start()
 
 if __name__ == "__main__":
+    # 单实例锁：防止托盘图标消失后用户重复启动导致进程堆积
+    import os as _os
+    _lock_path = Path(_os.environ.get("TEMP", ".")) / "stock_tool_instance.lock"
+    try:
+        import msvcrt
+        _lock_fd = _os.open(str(_lock_path), _os.O_CREAT | _os.O_RDWR, 0o644)
+        try:
+            msvcrt.locking(_lock_fd, msvcrt.LK_NBLCK, 1)
+        except _os.error:
+            _os.close(_lock_fd)
+            messagebox.showwarning("股票工具", "程序已在运行中（可能隐藏在托盘区）")
+            sys.exit(0)
+    except Exception:
+        pass
     window.mainloop()
