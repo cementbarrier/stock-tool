@@ -33,7 +33,7 @@ DEFAULTS = {
 
 
 def load_settings():
-    """加载配置，空值回退到默认值"""
+    """加载配置，缺失键回退到默认值"""
     try:
         with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -41,7 +41,8 @@ def load_settings():
         data = {}
     merged = {}
     for key in DEFAULTS:
-        merged[key] = data.get(key) if data.get(key) else DEFAULTS[key]
+        val = data.get(key)
+        merged[key] = val if val is not None else DEFAULTS[key]
     return merged
 
 

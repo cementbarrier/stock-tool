@@ -243,25 +243,24 @@ def _config_provider_changed(provider_combo, model_combo):
 
 def _config_save_all(provider_combo, api_key_entry, model_combo,
                      email_sender_entry=None, email_auth_entry=None, email_enabled_var=None):
-    """保存配置"""
+    """保存配置（原子写入，避免多次读写导致数据不一致）"""
+    from backend.config_manager import load_settings, save_settings
+
     PROVIDER_MAP = {"DeepSeek": "deepseek", "火山方舟/豆包": "volcengine"}
-    selected = provider_combo.get()
-    config_manager.set_setting("llm_provider", PROVIDER_MAP.get(selected, "deepseek"))
 
-    api_key = api_key_entry.get().strip()
-    config_manager.set_setting("llm_api_key", api_key)
+    settings = load_settings()
+    settings["llm_provider"] = PROVIDER_MAP.get(provider_combo.get(), "deepseek")
+    settings["llm_api_key"] = api_key_entry.get().strip()
+    settings["llm_model"] = model_combo.get().strip()
 
-    model = model_combo.get().strip()
-    config_manager.set_setting("llm_model", model)
-
-    # 邮件通知
     if email_sender_entry is not None:
-        config_manager.set_setting("email_sender", email_sender_entry.get().strip())
+        settings["email_sender"] = email_sender_entry.get().strip()
     if email_auth_entry is not None:
-        config_manager.set_setting("email_auth_code", email_auth_entry.get().strip())
+        settings["email_auth_code"] = email_auth_entry.get().strip()
     if email_enabled_var is not None:
-        config_manager.set_setting("email_enabled", "true" if email_enabled_var.get() else "false")
+        settings["email_enabled"] = "true" if email_enabled_var.get() else "false"
 
+    save_settings(settings)
     messagebox.showinfo("保存成功", "配置已保存")
 
 def button_batch_browse_clicked():
