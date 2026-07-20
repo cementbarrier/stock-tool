@@ -1675,7 +1675,7 @@ def create_main_window():
         from backend.notifier import send_notification
         ok = send_notification(
             "[股票工具] 测试通知",
-            f"这是一条测试通知，发送时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n如果你在微信收到此消息，说明配置成功。",
+            f"这是一条测试通知，发送时间：{_dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n如果你在微信收到此消息，说明配置成功。",
         )
         if ok:
             messagebox.showinfo("发送成功", "测试邮件已发出，请检查QQ邮箱（微信）")

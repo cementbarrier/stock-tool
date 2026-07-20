@@ -1,8 +1,8 @@
 SETTINGS_FILE=E:\stock-tool\config\settings.json
 FILE_EXISTS=True
-email_sender=''
-email_auth_code=''
-email_enabled=''
+email_sender='1520319542@qq.com'
+email_auth_code='ifgphjswullmicae'
+email_enabled='true'
 ---RAW FILE---
 {
   "bili2text_dir": "D:\\bili2text",
@@ -13,7 +13,10 @@ email_enabled=''
   "llm_model": "deepseek-reasoner",
   "valley_scheduler_enabled": "true",
   "batch_save_path": "",
+  "email_enabled": "true",
+  "email_smtp_server": "smtp.qq.com",
+  "email_smtp_port": "465",
   "email_sender": "1520319542@qq.com",
-  "email_auth_code": "",
-  "email_enabled": "true"
+  "email_auth_code": "ifgphjswullmicae",
+  "email_receiver": ""
 }

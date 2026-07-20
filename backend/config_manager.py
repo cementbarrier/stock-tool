@@ -37,7 +37,15 @@ def load_settings():
     try:
         with open(SETTINGS_FILE, 'r', encoding='utf-8-sig') as f:
             data = json.load(f)
-    except Exception:
+    except Exception as e:
+        import traceback
+        err_log = CONFIG_DIR / "_load_error.log"
+        try:
+            with open(err_log, 'w', encoding='utf-8') as ef:
+                ef.write(f"SETTINGS_FILE={SETTINGS_FILE}\nERROR={e}\n")
+                traceback.print_exc(file=ef)
+        except Exception:
+            pass
         data = {}
     merged = {}
     for key in DEFAULTS:
