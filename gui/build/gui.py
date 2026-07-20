@@ -296,11 +296,13 @@ def button_batch_browse_clicked():
         canvas_page_2.itemconfigure(entry_batch_path_text, text=path[:40] + "..." if len(path) > 40 else path)
 
 def button_3_clicked():
-    global selected_save_path
+    global selected_save_path, entry_single_path_text, canvas_page_1
     path = filedialog.askdirectory(title="选择保存路径")
     if path:
         selected_save_path = path
-        print(f"保存路径已选: {path}")
+        canvas_page_1.itemconfigure(entry_single_path_text,
+            text=path[:40] + "..." if len(path) > 40 else path)
+        _debug(f"保存路径已选: {path}")
 
 def button_4_clicked():
     global cancel_event_1, cancel_event_summary
@@ -781,6 +783,7 @@ def create_main_window():
     global progress_label_1, progress_bar_1, button_stop_1, cancel_event_1, cancel_event_summary
     global summary_result_1, summary_btn_1, price_label_1
     global progress_label_2, progress_bar_2, button_stop_2, cancel_event_2
+    global entry_single_path_text, canvas_page_1
     window = Tk()
     window.title("股票工具")
     window.geometry("994x666")
@@ -909,16 +912,6 @@ def create_main_window():
     )
     canvas_page_1.place(x=0, y=0)
 
-    if not HAS_PIL:
-
-        raise RuntimeError("Pillow (PIL) is required for image rendering. Install with: pip install Pillow")
-
-
-    image_1 = ImageTk.PhotoImage(
-        Image.open(relative_to_assets("search_icon.png")).resize((45, 43))
-    )
-
-
     canvas_page_1.create_text(
         30,
         190,
@@ -937,36 +930,33 @@ def create_main_window():
         font=("Inter", 16 * -1, "normal")
     )
 
-    canvas_page_1.create_image(
-        443 + 45 / 2,
-        90 + 43 / 2,
-        image=image_1
+    # ── 保存路径（Canvas 绘制，与定期跟踪页样式统一）──
+    canvas_page_1.create_rectangle(
+        70, 214, 370, 240,
+        fill="#F0F0F0", outline="#cfcece")
+
+    entry_single_path_text = canvas_page_1.create_text(
+        74, 216,
+        anchor="nw",
+        text="",
+        fill="#888888",
+        font=("Inter", 12 * -1, "normal")
     )
-    canvas_page_1.image_1 = image_1
-
-    # ── Button 圆角边框层（位于 Button widget 下方）──
-
-    # button_3 边框层
-
-    create_rounded_rectangle(
-        canvas_page_1,
-        29, 214, 436, 256, 8,
-        fill="#FFFFFF", outline="#e0e0e0")
 
     button_3 = Button(
         page_frame_1,
-        text="点击选择路径",
-        bg="#FFFFFF",
-        fg="#000000",
-        font=("Inter", 16, "normal"),
+        text="浏览",
+        bg="#2196F3",
+        fg="#FFFFFF",
+        font=("Inter", 12, "normal"),
         borderwidth=0,
         highlightthickness=0,
         command=button_3_clicked,
         relief="flat",
-        activebackground="#FFFFFF",
+        activebackground="#1976D2",
         cursor="hand2"
     )
-    button_3.place(x=30, y=215, width=405, height=40)
+    button_3.place(x=376, y=214, width=60, height=26)
 
     entry_1 = Entry(
         page_frame_1,
