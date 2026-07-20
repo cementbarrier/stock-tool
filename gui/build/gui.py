@@ -364,7 +364,7 @@ def _finish_parse_1(success, msg, bv="", path=""):
     progress_bar_1.place_forget()
     button_stop_1.place_forget()
     progress_label_1.configure(text=f"  {'✅' if success else '❌'} {msg}")
-    button_4.place(x=460, y=91, width=155, height=40)
+    button_4.place(x=460, y=91, width=60, height=26)
 
     # 无论成功与否，先隐藏旧的摘要结果
     summary_result = getattr(_finish_parse_1, "summary_result", None)
@@ -979,17 +979,17 @@ def create_main_window():
     button_4 = Button(
         page_frame_1,
         text="解析",
-        bg="#000000",
+        bg="#2196F3",
         fg="#FFFFFF",
-        font=("Inter", 16, "normal"),
+        font=("Inter", 12, "normal"),
         borderwidth=0,
         highlightthickness=0,
         command=button_4_clicked,
         relief="flat",
-        activebackground="#000000",
+        activebackground="#1976D2",
         cursor="hand2"
     )
-    button_4.place(x=460, y=91, width=155, height=40)
+    button_4.place(x=460, y=91, width=60, height=26)
 
     # ── 进度区域（页面1）──
     cancel_event_1 = Event()
