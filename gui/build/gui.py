@@ -831,14 +831,16 @@ def create_main_window():
         8, 82, 191, 122, 8,
         fill="#FFFFFF", outline="")
 
-    canvas.create_text(
-        93,
-        80,
-        anchor="n",
+    # ── 侧边栏标题（Label 组件，与按钮同渲染机制确保对齐）──
+    label_title = Label(
+        window,
         text="观点采集",
-        fill="#000000",
-        font=("Inter", 16, "bold")
+        bg="#FFFFFF",
+        fg="#000000",
+        font=("Inter", 16, "bold"),
+        anchor="center"
     )
+    label_title.place(x=8, y=80, width=183, height=36)
 
     # ── 侧边栏 Widget ──
 
