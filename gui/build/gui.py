@@ -832,7 +832,7 @@ def create_main_window():
         fill="#FFFFFF", outline="")
 
     canvas.create_text(
-        99,
+        93,
         80,
         anchor="n",
         text="观点采集",
