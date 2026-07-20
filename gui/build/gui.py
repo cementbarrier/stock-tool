@@ -20,9 +20,9 @@ else:
 
 from tkinter import messagebox
 from backend.single_parser import parse_single
-from backend.batch_parser import batch_parse
+from backend.batch_parser import batch_parse, fill_missing_summaries
 from backend import valley_scheduler, single_summary_client, time_price_judge, task_queue_manager
-from backend.up_manager import load_up_list, save_up_list
+from backend.up_manager import load_up_list, save_up_list, fetch_up_name
 from backend import config_manager
 
 from pathlib import Path
@@ -117,7 +117,7 @@ def show_page(index):
 # ── Widget 回调函数 ──
 
 selected_save_path = ""
-batch_save_path = ""
+batch_save_path = config_manager.get_setting("batch_save_path")
 
 # ── 调试日志 ──
 import datetime as _dt
@@ -238,6 +238,7 @@ def button_batch_browse_clicked():
     path = filedialog.askdirectory(title="选择批量解析保存路径")
     if path:
         batch_save_path = path
+        config_manager.set_setting("batch_save_path", path)
         _debug(f"批量保存路径已选: {path}")
         canvas_page_2.itemconfigure(entry_batch_path_text, text=path[:40] + "..." if len(path) > 40 else path)
 
@@ -416,6 +417,59 @@ def _finish_parse_2(success, msg):
     button_5.place(x=164, y=504, width=155, height=40)
 
 
+def button_7_clicked():
+    """补摘要：扫描保存目录，为缺少 AI 摘要的视频补生成摘要"""
+    global cancel_event_2
+    if not batch_save_path:
+        messagebox.showwarning("提示", "请先选择保存路径")
+        return
+
+    cancel_event_2.clear()
+
+    button_7.place_forget()
+    progress_label_2.configure(text="  正在扫描缺少摘要的视频... 0%")
+    progress_label_2.place(x=6, y=610, width=310, height=18)
+    progress_bar_2.configure(value=0, maximum=100, mode="determinate")
+    progress_bar_2.place(x=6, y=632, width=240, height=14)
+    button_stop_2.configure(command=lambda: cancel_event_2.set())
+    button_stop_2.place(x=254, y=629, width=65, height=20)
+
+    def run():
+        def progress_callback(ptype, msg, pct=0):
+            if ptype == "progress":
+                window.after(0, lambda m=msg, p=pct: _update_progress_2(m, p))
+            elif ptype == "done":
+                window.after(0, lambda m=msg: _finish_fill_2(True, m))
+            elif ptype == "error":
+                window.after(0, lambda m=msg: _finish_fill_2(False, m))
+
+        try:
+            result = fill_missing_summaries(
+                batch_save_path, callback=progress_callback, cancel_event=cancel_event_2
+            )
+            if result.get("success"):
+                window.after(0, lambda: _finish_fill_2(
+                    True,
+                    f"批次总结已重新生成" if result.get('summarized') else "未找到可用的转写文件"
+                ))
+            else:
+                window.after(0, lambda: _finish_fill_2(
+                    False, result.get("error", "补摘要失败")
+                ))
+        except Exception as e:
+            window.after(0, lambda: _finish_fill_2(False, str(e)))
+
+    threading.Thread(target=run, daemon=True).start()
+
+
+def _finish_fill_2(success, msg):
+    """补摘要完成后的UI恢复"""
+    progress_bar_2.place_forget()
+    button_stop_2.place_forget()
+    progress_label_2.configure(text=f"  {'✅' if success else '❌'} {msg}")
+    button_7.place(x=328, y=504, width=155, height=40)
+
+
 def button_6_clicked():
     """保存Treeview中的UP主修改到Excel"""
     rows = []
@@ -519,12 +573,21 @@ def on_double_click_edit(event):
     edit_entry.select_range(0, "end")
     edit_entry.focus_set()
 
+    _editing_done = False
+
     def save_edit(event=None):
+        nonlocal _editing_done
+        if _editing_done:
+            return
+        _editing_done = True
         new_value = edit_entry.get()
         values = list(treeview_1.item(iid, "values"))
         values[col_index] = new_value
         treeview_1.item(iid, values=values)
         edit_entry.destroy()
+        # UID 列编辑后，若昵称为空则自动查询补全
+        if col_index == 1 and new_value.strip() and not values[2]:
+            _auto_fill_name(iid, new_value.strip())
 
     edit_entry.bind("<Return>", save_edit)
     edit_entry.bind("<FocusOut>", save_edit)
@@ -536,6 +599,26 @@ def add_new_row():
     idx = len(all_items)
     tag = "evenrow" if idx % 2 == 0 else "oddrow"
     treeview_1.insert("", "end", values=["☐", "", ""], tags=(tag,))
+
+
+def _auto_fill_name(iid, uid):
+    """异步查询 B站 API 补全昵称"""
+    import threading
+    def fetch():
+        try:
+            name = fetch_up_name(uid)
+            if name:
+                window.after(0, lambda: _set_name(iid, name))
+        except Exception:
+            pass
+    threading.Thread(target=fetch, daemon=True).start()
+
+
+def _set_name(iid, name):
+    """在主线程中设置 Treeview 昵称列"""
+    values = list(treeview_1.item(iid, "values"))
+    values[2] = name
+    treeview_1.item(iid, values=values)
 
 
 def delete_selected():
@@ -1038,10 +1121,11 @@ def create_main_window():
         70, 478, 310, 502,
         fill="#F0F0F0", outline="#cfcece")
 
+    _bp = batch_save_path
     entry_batch_path_text = canvas_page_2.create_text(
         74, 480,
         anchor="nw",
-        text="",
+        text=_bp[:40] + "..." if len(_bp) > 40 else _bp if _bp else "",
         fill="#888888",
         font=("Inter", 12 * -1, "normal")
     )
@@ -1062,6 +1146,7 @@ def create_main_window():
     button_batch_browse.place(x=316, y=478, width=60, height=24)
 
     # ── 按钮区域 ──
+    global button_5, button_7
 
     button_6 = Button(
         page_frame_2,
@@ -1092,6 +1177,21 @@ def create_main_window():
         cursor="hand2"
     )
     button_5.place(x=164, y=504, width=155, height=40)
+
+    button_7 = Button(
+        page_frame_2,
+        text="补摘要",
+        bg="#FF9800",
+        fg="#FFFFFF",
+        font=("Inter", 16, "normal"),
+        borderwidth=0,
+        highlightthickness=0,
+        command=button_7_clicked,
+        relief="flat",
+        activebackground="#F57C00",
+        cursor="hand2"
+    )
+    button_7.place(x=328, y=504, width=155, height=40)
 
     # 新增按钮
     button_add = Button(
@@ -1381,6 +1481,7 @@ def create_main_window():
     _refresh_queue_status()
 
     # ── 进度区域（页面2）──
+    global cancel_event_2, progress_label_2, progress_bar_2, button_stop_2
     cancel_event_2 = Event()
     progress_label_2 = Label(
         page_frame_2, text="", fg="#555555", bg="#FFFFFF",

@@ -6,7 +6,8 @@ import sys
 from pathlib import Path
 
 if getattr(sys, 'frozen', False):
-    CONFIG_DIR = Path.home() / ".stock_tool"
+    # EXE 在 dist/ 下，上溯一级即项目根目录
+    CONFIG_DIR = Path(sys.executable).parent.parent / "config"
 else:
     CONFIG_DIR = Path(__file__).parent.parent / "config"
 
@@ -20,6 +21,7 @@ DEFAULTS = {
     "llm_api_key": "",
     "llm_model": "deepseek-chat",
     "valley_scheduler_enabled": "true",
+    "batch_save_path": "",
 }
 
 

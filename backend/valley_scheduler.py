@@ -4,6 +4,7 @@
 import threading
 import time
 import logging
+from pathlib import Path
 from typing import Optional, Callable
 
 from backend.time_price_judge import is_valley
@@ -92,7 +93,14 @@ def _execute_one(task: dict):
 
 {transcript[:MAX_TRANSCRIPT_LEN]}"""
         result = chat(prompt)
-        update_status(task_id, "finished", result_save_path="")
+        result_path = task.get("result_save_path", "")
+        if result_path:
+            try:
+                Path(result_path).parent.mkdir(parents=True, exist_ok=True)
+                Path(result_path).write_text(result, encoding="utf-8")
+            except Exception as e:
+                logger.warning(f"Failed to save summary to {result_path}: {e}")
+        update_status(task_id, "finished", result_save_path=result_path)
 
     elif task_type == "daily_report":
         # v0.9.5 实现批量报告逻辑

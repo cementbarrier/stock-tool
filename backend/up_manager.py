@@ -5,14 +5,16 @@ UP主数据管理
 import sys
 import pandas as pd
 from pathlib import Path
+from backend.config_manager import CONFIG_DIR
 
 if getattr(sys, 'frozen', False):
-    # EXE 所在目录持久化，而非 sys._MEIPASS 临时目录
-    PROJECT_ROOT = Path(sys.executable).parent
+    PROJECT_ROOT = Path(sys._MEIPASS)
 else:
     PROJECT_ROOT = Path(__file__).parent.parent
 
-CONFIG_DIR = PROJECT_ROOT / "config"
+SCRIPTS_DIR = PROJECT_ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 
 
 def load_up_list():
@@ -39,3 +41,13 @@ def save_up_list(rows: list):
     df = pd.DataFrame(rows, columns=["uid", "name", "weight"])
     df.to_excel(path, index=False)
     return True
+
+
+def fetch_up_name(uid: str) -> str:
+    """根据 UID 从B站API查询UP主昵称"""
+    import step1_fetch_videos as fetcher
+    cookies = fetcher.load_cookies()
+    if not cookies:
+        return ""
+    headers = fetcher.build_headers(cookies)
+    return fetcher.get_up_name(uid, headers)

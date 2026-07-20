@@ -16,12 +16,14 @@ from pathlib import Path
 
 if getattr(sys, 'frozen', False):
     PROJECT_ROOT = Path(sys._MEIPASS)
+    # 持久化配置路径，与 config_manager 保持一致
+    CONFIG_DIR = Path(sys.executable).parent.parent / "config"
 else:
     PROJECT_ROOT = Path(__file__).parent.parent
+    CONFIG_DIR = PROJECT_ROOT / "config"
 from functools import reduce
 from urllib.parse import urlencode
 
-CONFIG_DIR = PROJECT_ROOT / "config"
 DATA_DIR = PROJECT_ROOT / "data"
 LOG_DIR = PROJECT_ROOT / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -180,6 +182,25 @@ def get_up_videos(mid, headers, hours=24):
     except Exception as e:
         logger.error(f"  拉取失败 mid={mid}: {e}")
         return []
+
+
+def get_up_name(mid, headers):
+    """根据 UID 查询 UP 主昵称"""
+    params = {'mid': mid}
+    img_key, sub_key = get_wbi_keys(headers)
+    if img_key and sub_key:
+        params = sign_params(params, img_key, sub_key)
+    try:
+        resp = requests.get(
+            "https://api.bilibili.com/x/space/wbi/acc/info",
+            params=params, headers=headers, timeout=10
+        )
+        data = resp.json()
+        if data.get('code') == 0:
+            return data['data'].get('name', '')
+    except Exception:
+        pass
+    return ''
 
 
 def filter_stock_videos(videos):
