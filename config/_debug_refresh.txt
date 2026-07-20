@@ -12,7 +12,7 @@ email_enabled='true'
   "llm_api_key": "sk-8060c27e10094d0791acf3ec0ddb8b49",
   "llm_model": "deepseek-chat",
   "valley_scheduler_enabled": "true",
-  "batch_save_path": "",
+  "batch_save_path": "E:/video2txt",
   "email_enabled": "true",
   "email_smtp_server": "smtp.qq.com",
   "email_smtp_port": "465",

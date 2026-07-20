@@ -11,6 +11,8 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+import zhconv
+
 # SenseVoice 模型路径
 SENSEVOICE_MODEL_DIR = r"E:\SenseVoice\tool models\models\iic--SenseVoiceSmall\snapshots\master"
 
@@ -32,6 +34,13 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+
+def to_simplified(text: str) -> str:
+    """将文本中的繁体中文统一转为简体"""
+    if not text:
+        return text
+    return zhconv.convert(text, "zh-cn")
 
 
 def load_videos_with_audio():
@@ -88,8 +97,9 @@ def transcribe_sensevoice(audio_path):
         raw = result[0]
         # generate 可能返回 str 或 dict
         text = raw.get("text", "") if isinstance(raw, dict) else str(raw)
+        text = to_simplified(text.strip())
         logger.info(f"  SenseVoice 转写完成: {len(text)} 字符")
-        return text.strip()
+        return text
 
     except ImportError as e:
         logger.error(f"  SenseVoice 依赖缺失 (funasr): {e}")
@@ -134,7 +144,7 @@ def transcribe_whisper(audio_path, model_size="large-v3"):
         for segment in segments:
             text_parts.append(segment.text)
 
-        full_text = "".join(text_parts)
+        full_text = to_simplified("".join(text_parts))
         logger.info(f"  转写完成: {len(full_text)} 字符, 检测语言: {info.language}")
         return full_text.strip()
 
@@ -205,7 +215,7 @@ def transcribe_ocr_subtitle(video_bvid):
         sub_resp = requests.get(sub_url, headers=headers, timeout=10)
         sub_data = sub_resp.json()
         texts = [item['content'] for item in sub_data.get('body', [])]
-        full_text = ''.join(texts)
+        full_text = to_simplified(''.join(texts))
         logger.info(f"  CC字幕提取: {len(full_text)} 字符")
         return full_text.strip()
 
