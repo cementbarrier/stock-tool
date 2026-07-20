@@ -33,6 +33,7 @@ from tkinter import (
     Checkbutton,
     Entry,
     filedialog,
+    Scrollbar,
     Frame,
     Label,
     Listbox,
@@ -1350,9 +1351,28 @@ def create_main_window():
         width=796,
         bd=0,
         highlightthickness=0,
-        relief="ridge"
+        relief="ridge",
+        scrollregion=(0, 0, 796, 666)
     )
     canvas_page_3.place(x=0, y=0)
+
+    # ── 配置页滚动条 ──
+    scrollbar_page_3 = Scrollbar(page_frame_3, orient="vertical", command=canvas_page_3.yview)
+    scrollbar_page_3.place(x=776, y=0, height=666)
+    canvas_page_3.configure(yscrollcommand=scrollbar_page_3.set)
+
+    # 鼠标滚轮滚动
+    def _on_mousewheel_page3(event):
+        canvas_page_3.yview_scroll(-1 * int(event.delta / 120), "units")
+
+    def _bind_page3_wheel(_):
+        canvas_page_3.bind_all("<MouseWheel>", _on_mousewheel_page3)
+
+    def _unbind_page3_wheel(_):
+        canvas_page_3.unbind_all("<MouseWheel>")
+
+    canvas_page_3.bind("<Enter>", _bind_page3_wheel)
+    canvas_page_3.bind("<Leave>", _unbind_page3_wheel)
 
     canvas_page_3.create_text(
         30, 20,
@@ -1622,8 +1642,8 @@ def create_main_window():
         relief="flat", activebackground="#1976D2", cursor="hand2"
     ).place(x=430, y=648, width=80, height=24)
 
-    # 调整画布高度以容纳新增的「通知提醒」模块
-    canvas_page_3.config(height=686)
+    # 扩展滚动区域以容纳全部内容
+    canvas_page_3.configure(scrollregion=(0, 0, 796, 780))
 
     # ── 保存按钮 ──
     Button(
