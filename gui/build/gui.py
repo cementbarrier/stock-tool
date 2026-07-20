@@ -689,12 +689,9 @@ def _create_tray_image():
 
 
 def _restore_window(icon, item=None):
-    """从托盘恢复主窗口"""
-    global _tray_icon, _handling_minimize
+    """从托盘恢复主窗口（不销毁托盘图标，图标始终驻留）"""
+    global _handling_minimize
     _handling_minimize = False
-    if _tray_icon:
-        _tray_icon.stop()
-        _tray_icon = None
     window.deiconify()
     window.state('normal')
     window.lift()
@@ -716,12 +713,9 @@ def _quit_app(icon, item=None):
 
 
 def _hide_to_tray():
-    """将窗口隐藏到托盘（托盘图标不存在时自动重建）"""
-    global _tray_icon
+    """窗口最小化到托盘（托盘图标始终存在）"""
     if not HAS_TRAY:
         return
-    if _tray_icon is None:
-        _init_tray_icon()
     window.withdraw()
 
 
