@@ -110,7 +110,6 @@ pages = []
 def show_page(index):
 
     """切换显示的内容页面"""
-
     for i, page in enumerate(pages):
 
         if i == index:
@@ -120,6 +119,12 @@ def show_page(index):
         else:
 
             page.place_forget()
+
+    # 配置页滚动条随页面 2 显示/隐藏
+    if index == 2:
+        v_scrollbar_3.place(x=974, y=0, height=666)
+    else:
+        v_scrollbar_3.place_forget()
 
 
 # ── Widget 回调函数 ──
@@ -711,18 +716,26 @@ def _quit_app(icon, item=None):
 
 
 def _hide_to_tray():
-    """将窗口隐藏到托盘"""
+    """将窗口隐藏到托盘（托盘图标已初始化则直接隐藏）"""
     global _tray_icon
-    if _tray_icon is not None:
+    if _tray_icon is None and not HAS_TRAY:
         return
     window.withdraw()
-    if HAS_TRAY:
-        menu = pystray.Menu(
-            pystray.MenuItem('显示', _restore_window, default=True),
-            pystray.MenuItem('退出', _quit_app),
-        )
-        _tray_icon = pystray.Icon('stock_tool', _create_tray_image(), '股票工具', menu)
-        threading.Thread(target=_tray_icon.run, daemon=True).start()
+
+
+def _init_tray_icon():
+    """程序启动时即显示托盘图标，不隐藏窗口"""
+    global _tray_icon
+    if not HAS_TRAY:
+        return
+    if _tray_icon is not None:
+        return
+    menu = pystray.Menu(
+        pystray.MenuItem('显示', _restore_window, default=True),
+        pystray.MenuItem('退出', _quit_app),
+    )
+    _tray_icon = pystray.Icon('stock_tool', _create_tray_image(), '股票工具', menu)
+    threading.Thread(target=_tray_icon.run, daemon=True).start()
 
 
 def _on_window_close():
@@ -1333,46 +1346,62 @@ def create_main_window():
     )
     button_delete.place(x=164, y=556, width=155, height=40)
 
-    # ── 页面 3（配置）──
+    # ── 页面 3（配置，带滚动）──
 
-    page_frame_3 = Frame(
+    # 外层可滚动 Canvas（这才是放进 pages 的容器）
+    scroll_canvas_3 = Canvas(
         window,
-        bg="#FFFFFF",
-        borderwidth=0,
-        highlightthickness=0
-    )
-
-    pages.append(page_frame_3)
-
-    canvas_page_3 = Canvas(
-        page_frame_3,
         bg="#FFFFFF",
         height=666,
         width=796,
         bd=0,
         highlightthickness=0,
-        relief="ridge",
-        scrollregion=(0, 0, 796, 666)
+        relief="ridge"
+    )
+    pages.append(scroll_canvas_3)
+
+    # 滚动条
+    v_scrollbar_3 = Scrollbar(window, orient="vertical", command=scroll_canvas_3.yview)
+    scroll_canvas_3.configure(yscrollcommand=v_scrollbar_3.set)
+
+    # 内容 Frame（挂在 scroll_canvas_3 上）
+    page_frame_3 = Frame(
+        scroll_canvas_3,
+        bg="#FFFFFF",
+        borderwidth=0,
+        highlightthickness=0,
+        width=776,
+        height=780
+    )
+    page_frame_3.pack_propagate(False)
+    scroll_canvas_3.create_window((0, 0), window=page_frame_3, anchor="nw", tags="p3_inner")
+    scroll_canvas_3.configure(scrollregion=(0, 0, 776, 780))
+
+    # 鼠标滚轮绑定
+    def _on_mousewheel_outer(event):
+        scroll_canvas_3.yview_scroll(-1 * int(event.delta / 120), "units")
+
+    def _bind_scroll(_):
+        scroll_canvas_3.bind_all("<MouseWheel>", _on_mousewheel_outer)
+
+    def _unbind_scroll(_):
+        scroll_canvas_3.unbind_all("<MouseWheel>")
+
+    scroll_canvas_3.bind("<Enter>", _bind_scroll)
+    scroll_canvas_3.bind("<Leave>", _unbind_scroll)
+
+    layout_width = 776  # 留 20px 给滚动条
+
+    canvas_page_3 = Canvas(
+        page_frame_3,
+        bg="#FFFFFF",
+        height=780,
+        width=layout_width,
+        bd=0,
+        highlightthickness=0,
+        relief="ridge"
     )
     canvas_page_3.place(x=0, y=0)
-
-    # ── 配置页滚动条 ──
-    scrollbar_page_3 = Scrollbar(page_frame_3, orient="vertical", command=canvas_page_3.yview)
-    scrollbar_page_3.place(x=776, y=0, height=666)
-    canvas_page_3.configure(yscrollcommand=scrollbar_page_3.set)
-
-    # 鼠标滚轮滚动
-    def _on_mousewheel_page3(event):
-        canvas_page_3.yview_scroll(-1 * int(event.delta / 120), "units")
-
-    def _bind_page3_wheel(_):
-        canvas_page_3.bind_all("<MouseWheel>", _on_mousewheel_page3)
-
-    def _unbind_page3_wheel(_):
-        canvas_page_3.unbind_all("<MouseWheel>")
-
-    canvas_page_3.bind("<Enter>", _bind_page3_wheel)
-    canvas_page_3.bind("<Leave>", _unbind_page3_wheel)
 
     canvas_page_3.create_text(
         30, 20,
@@ -1642,8 +1671,9 @@ def create_main_window():
         relief="flat", activebackground="#1976D2", cursor="hand2"
     ).place(x=430, y=648, width=80, height=24)
 
-    # 扩展滚动区域以容纳全部内容
-    canvas_page_3.configure(scrollregion=(0, 0, 796, 780))
+    # 扩展 content frame 高度确保可滚动
+    page_frame_3.config(height=780)
+    scroll_canvas_3.configure(scrollregion=(0, 0, 776, 780))
 
     # ── 保存按钮 ──
     Button(
@@ -1692,6 +1722,7 @@ def create_main_window():
 
 
     window.resizable(False, False)
+    _init_tray_icon()
     return window
 
 
