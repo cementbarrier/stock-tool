@@ -86,7 +86,8 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None)
             sub_pct = (v_idx + 1) / len(videos)
             batch_pct = min(int((idx + sub_pct) / total * 100), 99)
 
-            video_dir = Path(save_dir) / uid / bvid
+            date_prefix = datetime.now().strftime("%m%d")
+            video_dir = Path(save_dir) / date_prefix / uid / bvid
             video_dir.mkdir(parents=True, exist_ok=True)
 
             if callback:
