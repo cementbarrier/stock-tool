@@ -372,7 +372,7 @@ def _finish_parse_1(success, msg, bv="", path=""):
     progress_bar_1.place_forget()
     button_stop_1.place_forget()
     progress_label_1.configure(text=f"  {'✅' if success else '❌'} {msg}")
-    button_4.place(x=460, y=91, width=155, height=40)
+    button_4.place(x=376, y=91, width=80, height=30)
 
     # 无论成功与否，先隐藏旧的摘要结果
     summary_result = getattr(_finish_parse_1, "summary_result", None)
@@ -973,14 +973,14 @@ def create_main_window():
 
     entry_1.bind("<FocusOut>", lambda e: e.widget.insert(0, "Search...") if not e.widget.get() else None)
 
-    entry_1.place(x=30, y=91, width=405, height=40)
+    entry_1.place(x=30, y=91, width=334, height=40)
 
     button_4 = Button(
         page_frame_1,
         text="解析",
         bg="#E0E0E0",
         fg="#000000",
-        font=("Inter", 16, "normal"),
+        font=("Inter", 12, "normal"),
         borderwidth=0,
         highlightthickness=0,
         command=button_4_clicked,
@@ -988,7 +988,7 @@ def create_main_window():
         activebackground="#D0D0D0",
         cursor="hand2"
     )
-    button_4.place(x=460, y=91, width=155, height=40)
+    button_4.place(x=376, y=91, width=80, height=30)
 
     # ── 进度区域（页面1）──
     cancel_event_1 = Event()
