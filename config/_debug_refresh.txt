@@ -1,0 +1,19 @@
+SETTINGS_FILE=E:\stock-tool\config\settings.json
+FILE_EXISTS=True
+email_sender=''
+email_auth_code=''
+email_enabled=''
+---RAW FILE---
+{
+  "bili2text_dir": "D:\\bili2text",
+  "cookie_file": "D:\\bili2text\\.b2t\\cookies.txt",
+  "debug_log": "",
+  "llm_provider": "deepseek",
+  "llm_api_key": "sk-8060c27e10094d0791acf3ec0ddb8b49",
+  "llm_model": "deepseek-reasoner",
+  "valley_scheduler_enabled": "true",
+  "batch_save_path": "",
+  "email_sender": "1520319542@qq.com",
+  "email_auth_code": "",
+  "email_enabled": "true"
+}
