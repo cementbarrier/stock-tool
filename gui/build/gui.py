@@ -832,9 +832,9 @@ def create_main_window():
         fill="#FFFFFF", outline="")
 
     canvas.create_text(
-        16,
+        99,
         80,
-        anchor="nw",
+        anchor="n",
         text="观点采集",
         fill="#000000",
         font=("Inter", 16, "bold")
