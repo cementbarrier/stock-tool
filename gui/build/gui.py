@@ -1088,8 +1088,17 @@ def create_main_window():
 
     summary_result_1 = Label(
         page_frame_1, text="", fg="#333333", bg="#F5F5F5",
-        font=("Inter", 12), anchor="nw", wraplength=570, justify="left"
+        font=("Inter", 12), anchor="nw", wraplength=570, justify="left",
+        cursor="hand2"
     )
+
+    def _copy_summary_to_clipboard(event):
+        text = summary_result_1.cget("text")
+        if text:
+            window.clipboard_clear()
+            window.clipboard_append(text)
+
+    summary_result_1.bind("<Button-1>", _copy_summary_to_clipboard)
 
     # 引用注入给 _finish_parse_1
     _finish_parse_1.price_label = price_label_1
