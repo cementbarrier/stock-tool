@@ -24,6 +24,10 @@ else:
 from functools import reduce
 from urllib.parse import urlencode
 
+# 增量解析：导入解析记录管理模块
+sys.path.insert(0, str(PROJECT_ROOT))
+from backend.parsed_records import is_parsed_today, get_cached_video, get_today_parsed_bvids
+
 DATA_DIR = PROJECT_ROOT / "data"
 LOG_DIR = PROJECT_ROOT / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -248,6 +252,10 @@ def main():
     headers = build_headers(cookies)
     all_videos = []
 
+    today_str = datetime.now().strftime('%Y%m%d')
+    skip_count = 0
+    new_count = 0
+
     for up in up_list:
         logger.info(f"拉取 {up['name']} (mid={up['mid']}) ...")
         time.sleep(0.5)  # 礼貌间隔
@@ -260,14 +268,37 @@ def main():
             v['up_mid'] = up['mid']
             v['up_weight'] = up['weight']
 
+            # ── 增量解析检查 ──
+            bvid = v.get('bvid', '')
+            cached = get_cached_video(bvid, today_str) if bvid else None
+            if cached and cached.get('transcript_path'):
+                v['_incremental_skip'] = True
+                v['transcript_path'] = cached['transcript_path']
+                v['transcript_method'] = cached.get('transcript_method', 'cached')
+                v['transcript_length'] = cached.get('transcript_length', 0)
+                skip_count += 1
+                logger.info(f"  ⊘ 跳过(已解析): {v['title'][:40]}")
+            else:
+                v['_incremental_skip'] = False
+                new_count += 1
+
         if stock_videos:
             save_video_meta(stock_videos, up['name'])
             all_videos.extend(stock_videos)
-            logger.info(f"  → 获取 {len(stock_videos)} 个相关视频 (共 {len(videos)} 个)")
+            new_in_batch = sum(1 for v in stock_videos if not v.get('_incremental_skip'))
+            skip_in_batch = sum(1 for v in stock_videos if v.get('_incremental_skip'))
+            logger.info(f"  → {len(stock_videos)} 个相关视频 (新:{new_in_batch} 跳过:{skip_in_batch}) (共 {len(videos)} 个)")
         else:
             logger.info(f"  → 当日无相关视频")
 
-    logger.info(f"\n总计: {len(all_videos)} 个待处理视频")
+    logger.info(f"\n总计: {len(all_videos)} 个待处理视频 (新:{new_count} 增量跳过:{skip_count})")
+
+    # 保存合并的元信息（含增量标记），供下游步骤使用
+    combined_path = DATA_DIR / "videos" / today_str / "all_videos_with_skip.json"
+    combined_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(combined_path, 'w', encoding='utf-8') as f:
+        json.dump(all_videos, f, ensure_ascii=False, indent=2)
+    logger.info(f"合并元信息已保存: {combined_path}")
     return all_videos
 
 

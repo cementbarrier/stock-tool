@@ -1,7 +1,7 @@
 SETTINGS_FILE=E:\stock-tool\config\settings.json
 FILE_EXISTS=True
 email_sender='1520319542@qq.com'
-email_auth_code='ifgphjswullmicae'
+email_auth_code='eqczdjiuydluffdb'
 email_enabled='true'
 ---RAW FILE---
 {
@@ -17,6 +17,6 @@ email_enabled='true'
   "email_smtp_server": "smtp.qq.com",
   "email_smtp_port": "465",
   "email_sender": "1520319542@qq.com",
-  "email_auth_code": "ifgphjswullmicae",
+  "email_auth_code": "eqczdjiuydluffdb",
   "email_receiver": ""
 }

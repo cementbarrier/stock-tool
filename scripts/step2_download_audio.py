@@ -107,6 +107,13 @@ def main():
 
     results = []
     for i, v in enumerate(videos, 1):
+        # ── 增量解析：跳过已缓存视频 ──
+        if v.get('_incremental_skip') and v.get('transcript_path'):
+            v['audio_path'] = None  # 不需要重新下载音频
+            results.append(v)
+            logger.info(f"[{i}/{len(videos)}] ⊘ 跳过(已解析): {v['up_name']}: {v.get('title', '')[:40]}")
+            continue
+
         logger.info(f"[{i}/{len(videos)}] {v['up_name']}: {v['title'][:40]}")
         audio_path = download_audio(v, audio_dir)
         if audio_path:

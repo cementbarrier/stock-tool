@@ -16,6 +16,11 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 LOG_DIR = PROJECT_ROOT / "logs"
 
+# 增量解析：导入时段标题
+import sys as _sys
+_sys.path.insert(0, str(PROJECT_ROOT))
+from backend.parsed_records import get_period_title
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -318,10 +323,12 @@ def cross_validate(stocks_opinions):
 def generate_report(validations):
     """生成 Markdown 格式的每日分析报告"""
     today = datetime.now().strftime('%Y-%m-%d')
+    period = get_period_title()
     report_lines = []
 
-    report_lines.append(f"# 每日个股分析报告")
+    report_lines.append(f"# {period} - 每日个股分析报告")
     report_lines.append(f"**日期**: {today}")
+    report_lines.append(f"**时段**: {period}")
     report_lines.append(f"**生成时间**: {datetime.now().strftime('%H:%M:%S')}")
     report_lines.append("")
     report_lines.append("---")

@@ -18,6 +18,11 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 LOG_DIR = PROJECT_ROOT / "logs"
 
+# 增量解析：导入解析记录管理
+import sys as _sys
+_sys.path.insert(0, str(PROJECT_ROOT))
+from backend.parsed_records import mark_parsed
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -227,6 +232,19 @@ def main():
     for i, v in enumerate(videos, 1):
         bvid = v.get('bvid')
         audio_path = v.get('audio_path')
+
+        # ── 增量解析：跳过已缓存视频（已有转写文件） ──
+        if v.get('_incremental_skip') and v.get('transcript_path'):
+            existing_path = v.get('transcript_path', '')
+            if os.path.exists(existing_path):
+                results.append(v)
+                logger.info(f"[{i}/{len(videos)}] ⊘ 跳过(已解析): {v['up_name']}: {v['title'][:40]}")
+                continue
+            else:
+                # 缓存的转写文件不存在，回退为重新解析
+                logger.warning(f"[{i}/{len(videos)}] 缓存文件丢失，重新解析: {v['up_name']}: {v['title'][:40]}")
+                v['_incremental_skip'] = False
+
         logger.info(f"[{i}/{len(videos)}] {v['up_name']}: {v['title'][:40]}")
 
         text = None
@@ -255,6 +273,22 @@ def main():
             v['transcript_path'] = transcript_path
             v['transcript_method'] = method
             v['transcript_length'] = len(text)
+            # ── 增量解析：标记为今日已解析 ──
+            try:
+                mark_parsed(bvid, {
+                    'up_name': v.get('up_name', ''),
+                    'title': v.get('title', ''),
+                    'transcript_path': transcript_path,
+                    'transcript_method': method,
+                    'transcript_length': len(text),
+                    'aid': v.get('aid'),
+                    'pub_time': v.get('pub_time'),
+                    'up_mid': v.get('up_mid'),
+                    'up_weight': v.get('up_weight'),
+                    'bvid': bvid,
+                })
+            except Exception as e:
+                logger.warning(f"  标记已解析失败: {e}")
             logger.info(f"  ✓ {method}: {len(text)} 字符")
         else:
             v['transcript_path'] = None
