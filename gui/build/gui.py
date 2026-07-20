@@ -832,12 +832,12 @@ def create_main_window():
         fill="#FFFFFF", outline="")
 
     canvas.create_text(
-        24,
+        16,
         80,
         anchor="nw",
         text="观点采集",
         fill="#000000",
-        font=("Inter", 16 * -1, "bold")
+        font=("Inter", 16, "bold")
     )
 
     # ── 侧边栏 Widget ──

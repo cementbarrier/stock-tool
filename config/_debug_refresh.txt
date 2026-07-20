@@ -8,7 +8,7 @@ email_enabled='true'
   "bili2text_dir": "D:\\bili2text",
   "cookie_file": "D:\\bili2text\\.b2t\\cookies.txt",
   "debug_log": "",
-  "llm_provider": "volcengine",
+  "llm_provider": "deepseek",
   "llm_api_key": "sk-8060c27e10094d0791acf3ec0ddb8b49",
   "llm_model": "deepseek-chat",
   "valley_scheduler_enabled": "true",
