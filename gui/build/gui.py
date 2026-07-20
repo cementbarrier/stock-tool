@@ -110,6 +110,14 @@ pages = []
 def show_page(index):
 
     """切换显示的内容页面"""
+    # 侧边栏按钮高亮
+    sidebar_buttons = [button_1, button_2, button_3]
+    for i, btn in enumerate(sidebar_buttons):
+        if i == index:
+            btn.configure(bg="#F7F7F7", activebackground="#F7F7F7")
+        else:
+            btn.configure(bg="#FFFFFF", activebackground="#FFFFFF")
+
     for i, page in enumerate(pages):
 
         if i == index:
@@ -364,7 +372,7 @@ def _finish_parse_1(success, msg, bv="", path=""):
     progress_bar_1.place_forget()
     button_stop_1.place_forget()
     progress_label_1.configure(text=f"  {'✅' if success else '❌'} {msg}")
-    button_4.place(x=460, y=91, width=60, height=26)
+    button_4.place(x=460, y=91, width=155, height=40)
 
     # 无论成功与否，先隐藏旧的摘要结果
     summary_result = getattr(_finish_parse_1, "summary_result", None)
@@ -777,7 +785,7 @@ def _on_unmap(event):
 
 
 def create_main_window():
-    global button_1, button_2, button_3, entry_1, button_4
+    global button_1, button_2, button_3, entry_1, button_4, browse_btn
     global treeview_1, button_5, button_6, button_add, button_delete, canvas, canvas_page_2, entry_batch_path_text
     global page_frame_2, treeview_1_cols, image_1
     global progress_label_1, progress_bar_1, button_stop_1, cancel_event_1, cancel_event_summary
@@ -825,20 +833,11 @@ def create_main_window():
 
     canvas.create_text(
         24,
-        90,
-        anchor="nw",
-        text="Discover",
-        fill="#000000",
-        font=("Inter", 16 * -1, "bold")
-    )
-
-    canvas.create_text(
-        24,
-        24,
+        80,
         anchor="nw",
         text="观点采集",
         fill="#000000",
-        font=("Inter", 20 * -1, "bold")
+        font=("Inter", 16 * -1, "bold")
     )
 
     # ── 侧边栏 Widget ──
@@ -932,31 +931,31 @@ def create_main_window():
 
     # ── 保存路径（Canvas 绘制，与定期跟踪页样式统一）──
     canvas_page_1.create_rectangle(
-        70, 214, 370, 240,
+        30, 214, 370, 240,
         fill="#F0F0F0", outline="#cfcece")
 
     entry_single_path_text = canvas_page_1.create_text(
-        74, 216,
+        34, 216,
         anchor="nw",
         text="",
         fill="#888888",
         font=("Inter", 12 * -1, "normal")
     )
 
-    button_3 = Button(
+    browse_btn = Button(
         page_frame_1,
         text="浏览",
-        bg="#2196F3",
-        fg="#FFFFFF",
+        bg="#E0E0E0",
+        fg="#000000",
         font=("Inter", 12, "normal"),
         borderwidth=0,
         highlightthickness=0,
         command=button_3_clicked,
         relief="flat",
-        activebackground="#1976D2",
+        activebackground="#D0D0D0",
         cursor="hand2"
     )
-    button_3.place(x=376, y=214, width=60, height=26)
+    browse_btn.place(x=376, y=212, width=80, height=30)
 
     entry_1 = Entry(
         page_frame_1,
@@ -979,17 +978,17 @@ def create_main_window():
     button_4 = Button(
         page_frame_1,
         text="解析",
-        bg="#2196F3",
-        fg="#FFFFFF",
-        font=("Inter", 12, "normal"),
+        bg="#E0E0E0",
+        fg="#000000",
+        font=("Inter", 16, "normal"),
         borderwidth=0,
         highlightthickness=0,
         command=button_4_clicked,
         relief="flat",
-        activebackground="#1976D2",
+        activebackground="#D0D0D0",
         cursor="hand2"
     )
-    button_4.place(x=460, y=91, width=60, height=26)
+    button_4.place(x=460, y=91, width=155, height=40)
 
     # ── 进度区域（页面1）──
     cancel_event_1 = Event()
