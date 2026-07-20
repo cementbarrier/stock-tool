@@ -166,6 +166,29 @@ def _config_get_display(key):
 def _config_refresh_all(canvas, b2t_id, cookie_id, log_id, provider_combo, api_key_entry, model_combo,
                         email_sender_entry=None, email_auth_entry=None):
     """刷新配置页面所有字段显示"""
+    # 诊断：记录加载的邮件配置值 + 文件路径 + 原始内容
+    import json as _json
+    _es = config_manager.get_setting("email_sender")
+    _ea = config_manager.get_setting("email_auth_code")
+    _ee = config_manager.get_setting("email_enabled")
+    _sf = Path(config_manager.SETTINGS_FILE)
+    _raw = ""
+    try:
+        with open(_sf, "r", encoding="utf-8") as _rf:
+            _raw = _rf.read()
+    except Exception as _e:
+        _raw = f"READ_ERROR: {_e}"
+    try:
+        with open(_sf.parent / "_debug_refresh.txt", "w", encoding="utf-8") as _df:
+            _df.write(f"SETTINGS_FILE={_sf}\n")
+            _df.write(f"FILE_EXISTS={_sf.exists()}\n")
+            _df.write(f"email_sender={_es!r}\n")
+            _df.write(f"email_auth_code={_ea!r}\n")
+            _df.write(f"email_enabled={_ee!r}\n")
+            _df.write(f"---RAW FILE---\n{_raw}\n")
+    except Exception:
+        pass
+
     for text_id, key in [
         (b2t_id, "bili2text_dir"),
         (cookie_id, "cookie_file"),

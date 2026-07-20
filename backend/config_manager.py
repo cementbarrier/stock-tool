@@ -35,7 +35,7 @@ DEFAULTS = {
 def load_settings():
     """加载配置，缺失键回退到默认值"""
     try:
-        with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+        with open(SETTINGS_FILE, 'r', encoding='utf-8-sig') as f:
             data = json.load(f)
     except Exception:
         data = {}
