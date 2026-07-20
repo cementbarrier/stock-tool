@@ -10,7 +10,7 @@ email_enabled='true'
   "debug_log": "",
   "llm_provider": "deepseek",
   "llm_api_key": "sk-8060c27e10094d0791acf3ec0ddb8b49",
-  "llm_model": "deepseek-reasoner",
+  "llm_model": "deepseek-chat",
   "valley_scheduler_enabled": "true",
   "batch_save_path": "",
   "email_enabled": "true",

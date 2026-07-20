@@ -51,7 +51,8 @@ _sensevoice_model = None
 
 
 def transcribe_sensevoice(audio_path):
-    """使用 SenseVoice Small 本地转写，中文识别专用优化（走 FunASR 内置实现）"""
+    """使用 SenseVoice Small 本地转写，中文识别专用优化（走 FunASR 内置实现）
+    设备策略：优先 CUDA，资源不足时自动回退 CPU"""
     global _sensevoice_model
 
     try:
@@ -59,11 +60,21 @@ def transcribe_sensevoice(audio_path):
 
         if _sensevoice_model is None:
             logger.info("  加载 SenseVoice Small 模型（首次）...")
-            _sensevoice_model = AutoModel(
-                model=SENSEVOICE_MODEL_DIR,
-                device="cuda:0",
-                trust_remote_code=False,
-            )
+            try:
+                _sensevoice_model = AutoModel(
+                    model=SENSEVOICE_MODEL_DIR,
+                    device="cuda:0",
+                    trust_remote_code=False,
+                )
+                logger.info("  SenseVoice 使用 CUDA:0")
+            except Exception as cuda_err:
+                logger.warning(f"  SenseVoice CUDA 加载失败 ({cuda_err})，回退 CPU")
+                _sensevoice_model = AutoModel(
+                    model=SENSEVOICE_MODEL_DIR,
+                    device="cpu",
+                    trust_remote_code=False,
+                )
+                logger.info("  SenseVoice 使用 CPU")
 
         result = _sensevoice_model.generate(
             input=audio_path,
@@ -89,16 +100,25 @@ def transcribe_sensevoice(audio_path):
 
 
 def transcribe_whisper(audio_path, model_size="large-v3"):
-    """使用 faster-whisper 本地转写，利用 RTX 3070 GPU"""
+    """使用 faster-whisper 本地转写
+    设备策略：优先 CUDA (FP16)，资源不足时自动回退 CPU (int8)"""
     try:
         from faster_whisper import WhisperModel
 
         logger.info(f"  加载 Whisper 模型: {model_size}")
-        model = WhisperModel(
-            model_size,
-            device="cuda",
-            compute_type="float16",  # RTX 3070 支持 FP16 加速
-        )
+
+        # 优先 CUDA
+        device = "cuda"
+        compute_type = "float16"
+        try:
+            model = WhisperModel(model_size, device=device, compute_type=compute_type)
+            logger.info(f"  Whisper 使用 CUDA (float16)")
+        except Exception as cuda_err:
+            logger.warning(f"  Whisper CUDA 加载失败 ({cuda_err})，回退 CPU (int8)")
+            device = "cpu"
+            compute_type = "int8"
+            model = WhisperModel(model_size, device=device, compute_type=compute_type)
+            logger.info(f"  Whisper 使用 CPU (int8)")
 
         segments, info = model.transcribe(
             audio_path,
