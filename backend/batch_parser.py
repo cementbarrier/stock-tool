@@ -116,19 +116,46 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
             time.sleep(1)
 
     # ── Phase 2: 生成批次总结文档 ──
-    # 仅本次新转写的视频参与 AI 总结，存量跳过的不参与
+    # 同一天多次运行时，汇总当天全部转写视频到同一份总结
+    today = datetime.now().strftime("%Y-%m-%d")
+    date_prefix = datetime.now().strftime("%m%d")
+    today_dir = Path(save_dir) / date_prefix
+    existing_summary = Path(save_dir) / BATCH_SUMMARY_FILENAME.format(date=today)
+
     transcribe_success = [r for r in results if r.get("success") and r.get("path") and not r.get("skipped")]
     new_count = len(transcribe_success)
+
     if new_count == 0:
         skipped_count = sum(1 for r in results if r.get("skipped"))
+        if existing_summary.exists():
+            if callback:
+                callback("done", f"批量解析完成：无新增转写，当天总结已存在（存量 {skipped_count} 个）", 100)
+            return _build_return(results, summarized=1)
+        else:
+            if callback:
+                callback("done", f"批量解析完成：无新增转写，跳过 AI 总结（存量 {skipped_count} 个已有转写）", 100)
+            return _build_return(results)
+
+    # 当天已有总结 → 合并全部转写 txt 重新生成；否则仅用本次新转写
+    if existing_summary.exists() and today_dir.exists():
+        summary_input = list(transcribe_success)
+        seen = {(r["uid"], r["bvid"]) for r in transcribe_success}
+        for txt_path in today_dir.rglob("*.txt"):
+            if txt_path.name == SUMMARY_FILENAME:
+                continue
+            bvid = txt_path.parent.name
+            uid = txt_path.parent.parent.name
+            if (uid, bvid) not in seen:
+                seen.add((uid, bvid))
+                summary_input.append({"uid": uid, "bvid": bvid, "title": "", "path": str(txt_path)})
         if callback:
-            callback("done", f"批量解析完成：无新增转写，跳过 AI 总结（存量 {skipped_count} 个已有转写）", 100)
-        return _build_return(results)
+            callback("progress", f"转写完成，当天已有总结，正在重新汇总（共 {len(summary_input)} 个视频）...", 99)
+    else:
+        summary_input = transcribe_success
+        if callback:
+            callback("progress", f"转写完成，正在生成批次总结（新增 {new_count} 个视频）...", 99)
 
-    if callback:
-        callback("progress", f"转写完成，正在生成批次总结（新增 {new_count} 个视频）...", 99)
-
-    batch_summary_path = _generate_batch_summary(save_dir, transcribe_success)
+    batch_summary_path = _generate_batch_summary(save_dir, summary_input)
 
     # ── 邮件通知 ──
     try:
