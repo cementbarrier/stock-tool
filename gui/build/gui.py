@@ -447,7 +447,7 @@ def button_5_clicked():
                 window.after(0, lambda m=msg: _finish_parse_2(False, m))
 
         try:
-            result = batch_parse(selected_uids, batch_save_path, callback=progress_callback, cancel_event=cancel_event_2, target_date=date_var_2.get().strip() or None)
+            result = batch_parse(selected_uids, batch_save_path, callback=progress_callback, cancel_event=cancel_event_2, target_date=f"{combo_year_2.get()}-{combo_month_2.get().zfill(2)}-{combo_day_2.get().zfill(2)}")
             if result.get("cancelled"):
                 pass  # _finish_parse_2 already called via callback
             elif result.get("success"):
@@ -1293,18 +1293,26 @@ def create_main_window():
         font=("Inter", 14 * -1, "normal")
     )
 
-    date_var_2 = StringVar(value="")
-    entry_date_2 = Entry(
-        page_frame_2,
-        textvariable=date_var_2,
-        font=("Inter", 12),
-        bg="#F0F0F0",
-        fg="#333333",
-        borderwidth=1,
-        relief="solid",
-        justify="center"
-    )
-    entry_date_2.place(x=434, y=478, width=100, height=24)
+    today = _dt.date.today()
+    years = [str(y) for y in range(2020, today.year + 2)]
+
+    combo_year_2 = ttk.Combobox(page_frame_2, values=years, width=4, font=("Inter", 11), state="readonly")
+    combo_year_2.set(str(today.year))
+    combo_year_2.place(x=432, y=478, width=60, height=24)
+
+    combo_month_2 = ttk.Combobox(page_frame_2, values=[str(m) for m in range(1, 13)], width=2, font=("Inter", 11), state="readonly")
+    combo_month_2.set(str(today.month))
+    combo_month_2.place(x=496, y=478, width=40, height=24)
+
+    combo_day_2 = ttk.Combobox(page_frame_2, values=[str(d) for d in range(1, 32)], width=2, font=("Inter", 11), state="readonly")
+    combo_day_2.set(str(today.day))
+    combo_day_2.place(x=540, y=478, width=40, height=24)
+
+    def _date_today_2():
+        t = _dt.date.today()
+        combo_year_2.set(str(t.year))
+        combo_month_2.set(str(t.month))
+        combo_day_2.set(str(t.day))
 
     button_date_today_2 = Button(
         page_frame_2,
@@ -1314,20 +1322,12 @@ def create_main_window():
         font=("Inter", 11, "normal"),
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: date_var_2.set(""),
+        command=_date_today_2,
         relief="flat",
         activebackground="#757575",
         cursor="hand2"
     )
-    button_date_today_2.place(x=542, y=478, width=45, height=24)
-
-    canvas_page_2.create_text(
-        594, 478,
-        anchor="nw",
-        text="留空=今天",
-        fill="#999999",
-        font=("Inter", 11 * -1, "normal")
-    )
+    button_date_today_2.place(x=586, y=478, width=45, height=24)
 
     # ── 按钮区域 ──
     global button_5, button_7

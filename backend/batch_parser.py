@@ -64,7 +64,12 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
             callback("progress", f"正在查询UP主 {uid}... ({idx+1}/{total})", up_pct)
 
         date_label = target_date if target_date else "今日"
-        videos = fetcher.get_up_videos(uid, headers, target_date=target_date)
+        videos = fetcher.get_up_videos(uid, headers, target_date=target_date, cancel_event=cancel_event)
+
+        if cancel_event.is_set():
+            if callback:
+                callback("cancelled", f"批量解析已取消", 0)
+            return _build_return(results, cancelled=True)
 
         if not videos:
             if callback:

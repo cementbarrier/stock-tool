@@ -139,7 +139,7 @@ def sign_params(params, img_key, sub_key):
     return params
 
 
-def get_up_videos(mid, headers, target_date=None, hours=None):
+def get_up_videos(mid, headers, target_date=None, hours=None, cancel_event=None):
     """拉取指定 UP 主的视频列表
 
     Args:
@@ -147,7 +147,11 @@ def get_up_videos(mid, headers, target_date=None, hours=None):
         headers: 请求头
         target_date: 目标日期字符串 'YYYY-MM-DD'，默认今天。仅保留该日发布的视频
         hours: 兼容旧参数，指定最近N小时（target_date优先级更高）
+        cancel_event: threading.Event，设为 True 时提前中止
     """
+    if cancel_event and cancel_event.is_set():
+        return []
+
     params = {
         'mid': mid,
         'ps': 30,
@@ -183,8 +187,10 @@ def get_up_videos(mid, headers, target_date=None, hours=None):
     try:
         resp = requests.get(
             "https://api.bilibili.com/x/space/wbi/arc/search",
-            params=params, headers=headers, timeout=15
+            params=params, headers=headers, timeout=8
         )
+        if cancel_event and cancel_event.is_set():
+            return []
         data = resp.json()
         if data.get('code') != 0:
             logger.warning(f"  API 返回错误 mid={mid}: {data.get('message')}")
