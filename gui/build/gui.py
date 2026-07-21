@@ -581,6 +581,7 @@ def button_6_clicked():
         if uid:
             rows.append({"uid": uid, "name": name, "weight": weight})
 
+    _debug(f"保存按钮: 共 {len(rows)} 位UP主待保存")
     try:
         save_up_list(rows)
         _debug(f"已保存 {len(rows)} 位UP主到Excel")
@@ -688,6 +689,7 @@ def on_double_click_edit(event):
         edit_entry.destroy()
         # UID 列编辑后，若昵称为空则自动查询补全
         if col_index == 1 and new_value.strip() and not values[2]:
+            _debug(f"自动补全触发: {new_value.strip()}")
             _auto_fill_name(iid, new_value.strip())
 
     edit_entry.bind("<Return>", save_edit)
@@ -710,8 +712,10 @@ def _auto_fill_name(iid, uid):
             name = fetch_up_name(uid)
             if name:
                 window.after(0, lambda: _set_name(iid, name))
-        except Exception:
-            pass
+            else:
+                _debug(f"自动补全: {uid} 未查到昵称")
+        except Exception as e:
+            _debug(f"自动补全失败: {uid} -> {e}")
     threading.Thread(target=fetch, daemon=True).start()
 
 
