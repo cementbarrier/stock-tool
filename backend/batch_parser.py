@@ -42,6 +42,12 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
     if cancel_event is None:
         cancel_event = _th.Event()
 
+    # 统一日期来源：target_date 优先，否则用今天
+    if target_date:
+        effective_date = datetime.strptime(target_date, "%Y-%m-%d")
+    else:
+        effective_date = datetime.now()
+
     cookies = fetcher.load_cookies()
     if not cookies:
         if callback:
@@ -96,7 +102,7 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
 
             batch_pct = min(int((idx + 0.3 + 0.7 * (v_idx + 1) / len(videos)) / total * 100), 99)
 
-            date_prefix = datetime.now().strftime("%m%d")
+            date_prefix = effective_date.strftime("%m%d")
             video_dir = Path(save_dir) / date_prefix / uid / bvid
             video_dir.mkdir(parents=True, exist_ok=True)
 
@@ -117,8 +123,8 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
 
     # ── Phase 2: 生成批次总结文档 ──
     # 同一天多次运行时，汇总当天全部转写视频到同一份总结
-    today = datetime.now().strftime("%Y-%m-%d")
-    date_prefix = datetime.now().strftime("%m%d")
+    today = effective_date.strftime("%Y-%m-%d")
+    date_prefix = effective_date.strftime("%m%d")
     today_dir = Path(save_dir) / date_prefix
     existing_summary = Path(save_dir) / BATCH_SUMMARY_FILENAME.format(date=today)
 
