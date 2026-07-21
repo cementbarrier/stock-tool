@@ -423,6 +423,9 @@ def button_5_clicked():
         messagebox.showwarning("提示", "没有选中任何UP主")
         return
 
+    # 在主线程获取日期（避免子线程操作tk变量）
+    target_date = f"{combo_year_2.get()}-{combo_month_2.get().zfill(2)}-{combo_day_2.get().zfill(2)}"
+
     # 重置取消事件
     cancel_event_2.clear()
 
@@ -447,7 +450,7 @@ def button_5_clicked():
                 window.after(0, lambda m=msg: _finish_parse_2(False, m))
 
         try:
-            result = batch_parse(selected_uids, batch_save_path, callback=progress_callback, cancel_event=cancel_event_2, target_date=f"{combo_year_2.get()}-{combo_month_2.get().zfill(2)}-{combo_day_2.get().zfill(2)}")
+            result = batch_parse(selected_uids, batch_save_path, callback=progress_callback, cancel_event=cancel_event_2, target_date=target_date)
             if result.get("cancelled"):
                 pass  # _finish_parse_2 already called via callback
             elif result.get("success"):
