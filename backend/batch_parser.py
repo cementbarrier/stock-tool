@@ -24,7 +24,7 @@ SUMMARY_FILENAME = "ai_summary.txt"
 BATCH_SUMMARY_FILENAME = "批次总结_{date}.txt"
 
 
-def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None):
+def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None, target_date=None):
     """批量解析选中UP主的最新视频
 
     两阶段执行：
@@ -36,6 +36,7 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None)
         save_dir: 保存根目录
         callback: 回调函数 (type, message, percent)
         cancel_event: threading.Event，设为 True 时中止
+        target_date: 目标日期 'YYYY-MM-DD'，默认今天
     """
     import threading as _th
     if cancel_event is None:
@@ -62,11 +63,12 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None)
         if callback:
             callback("progress", f"正在查询UP主 {uid}... ({idx+1}/{total})", up_pct)
 
-        videos = fetcher.get_up_videos(uid, headers)
+        date_label = target_date if target_date else "今日"
+        videos = fetcher.get_up_videos(uid, headers, target_date=target_date)
 
         if not videos:
             if callback:
-                callback("progress", f"UP主 {uid} 今日无新视频，跳过", up_pct)
+                callback("progress", f"UP主 {uid} {date_label}无新视频，跳过", up_pct)
             continue
 
         if callback:

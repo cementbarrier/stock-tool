@@ -447,7 +447,7 @@ def button_5_clicked():
                 window.after(0, lambda m=msg: _finish_parse_2(False, m))
 
         try:
-            result = batch_parse(selected_uids, batch_save_path, callback=progress_callback, cancel_event=cancel_event_2)
+            result = batch_parse(selected_uids, batch_save_path, callback=progress_callback, cancel_event=cancel_event_2, target_date=date_var_2.get().strip() or None)
             if result.get("cancelled"):
                 pass  # _finish_parse_2 already called via callback
             elif result.get("success"):
@@ -1283,6 +1283,51 @@ def create_main_window():
         cursor="hand2"
     )
     button_batch_browse.place(x=316, y=478, width=60, height=24)
+
+    # ── 日期选择（仅定期跟踪，在保存于行右侧）──
+    canvas_page_2.create_text(
+        390, 478,
+        anchor="nw",
+        text="日期",
+        fill="#000000",
+        font=("Inter", 14 * -1, "normal")
+    )
+
+    date_var_2 = StringVar(value="")
+    entry_date_2 = Entry(
+        page_frame_2,
+        textvariable=date_var_2,
+        font=("Inter", 12),
+        bg="#F0F0F0",
+        fg="#333333",
+        borderwidth=1,
+        relief="solid",
+        justify="center"
+    )
+    entry_date_2.place(x=434, y=478, width=100, height=24)
+
+    button_date_today_2 = Button(
+        page_frame_2,
+        text="今天",
+        bg="#9E9E9E",
+        fg="#FFFFFF",
+        font=("Inter", 11, "normal"),
+        borderwidth=0,
+        highlightthickness=0,
+        command=lambda: date_var_2.set(""),
+        relief="flat",
+        activebackground="#757575",
+        cursor="hand2"
+    )
+    button_date_today_2.place(x=542, y=478, width=45, height=24)
+
+    canvas_page_2.create_text(
+        594, 478,
+        anchor="nw",
+        text="留空=今天",
+        fill="#999999",
+        font=("Inter", 11 * -1, "normal")
+    )
 
     # ── 按钮区域 ──
     global button_5, button_7
