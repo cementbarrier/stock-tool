@@ -410,7 +410,7 @@ def _finish_parse_1(success, msg, bv="", path=""):
 def button_5_clicked():
     """批量解析勾选的UP主"""
     try:
-        global cancel_event_2
+        global cancel_event_2, combo_year_2, combo_month_2, combo_day_2
         _debug("button_5 CLICKED")
         if not batch_save_path:
             messagebox.showwarning("提示", "请先选择保存路径")
