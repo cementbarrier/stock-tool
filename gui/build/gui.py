@@ -409,71 +409,77 @@ def _finish_parse_1(success, msg, bv="", path=""):
 
 def button_5_clicked():
     """批量解析勾选的UP主"""
-    global cancel_event_2
-    if not batch_save_path:
-        messagebox.showwarning("提示", "请先选择保存路径")
-        return
+    try:
+        global cancel_event_2
+        _debug("button_5 CLICKED")
+        if not batch_save_path:
+            messagebox.showwarning("提示", "请先选择保存路径")
+            return
 
-    # 收集勾选的UID
-    selected_uids = []
-    for item in treeview_1.get_children():
-        if treeview_1.set(item, "选中") == "☑":
-            uid = treeview_1.set(item, "uid")
-            if uid:
-                selected_uids.append(uid)
+        # 收集勾选的UID
+        selected_uids = []
+        for item in treeview_1.get_children():
+            if treeview_1.set(item, "选中") == "☑":
+                uid = treeview_1.set(item, "uid")
+                if uid:
+                    selected_uids.append(uid)
 
-    if not selected_uids:
-        messagebox.showwarning("提示", "没有选中任何UP主")
-        return
+        if not selected_uids:
+            messagebox.showwarning("提示", "没有选中任何UP主")
+            return
 
-    # 在主线程获取日期（避免子线程操作tk变量）
-    target_date = f"{combo_year_2.get()}-{combo_month_2.get().zfill(2)}-{combo_day_2.get().zfill(2)}"
+        # 在主线程获取日期（避免子线程操作tk变量）
+        target_date = f"{combo_year_2.get()}-{combo_month_2.get().zfill(2)}-{combo_day_2.get().zfill(2)}"
 
-    # 重置取消事件
-    cancel_event_2.clear()
+        # 重置取消事件
+        cancel_event_2.clear()
 
-    # 显示进度 UI，隐藏解析按钮
-    button_5.place_forget()
-    progress_label_2.configure(text=f"  准备处理 {len(selected_uids)} 个UP主... 0%")
-    progress_label_2.place(x=6, y=610, width=310, height=18)
-    progress_label_2.tkraise()
-    progress_bar_2.configure(value=0, maximum=100, mode="determinate")
-    progress_bar_2.place(x=6, y=632, width=240, height=14)
-    progress_bar_2.tkraise()
-    button_stop_2.configure(command=lambda: cancel_event_2.set())
-    button_stop_2.place(x=254, y=629, width=65, height=20)
-    button_stop_2.tkraise()
+        # 显示进度 UI，隐藏解析按钮
+        button_5.place_forget()
+        progress_label_2.configure(text=f"  准备处理 {len(selected_uids)} 个UP主... 0%")
+        progress_label_2.place(x=6, y=610, width=310, height=18)
+        progress_label_2.tkraise()
+        progress_bar_2.configure(value=0, maximum=100, mode="determinate")
+        progress_bar_2.place(x=6, y=632, width=240, height=14)
+        progress_bar_2.tkraise()
+        button_stop_2.configure(command=lambda: cancel_event_2.set())
+        button_stop_2.place(x=254, y=629, width=65, height=20)
+        button_stop_2.tkraise()
 
-    def run():
-        def progress_callback(ptype, msg, pct=0):
-            if ptype == "progress":
-                window.after(0, lambda m=msg, p=pct: _update_progress_2(m, p))
-            elif ptype == "done":
-                window.after(0, lambda m=msg: _finish_parse_2(True, m))
-            elif ptype == "error":
-                window.after(0, lambda m=msg: _finish_parse_2(False, m))
-            elif ptype == "cancelled":
-                window.after(0, lambda m=msg: _finish_parse_2(False, m))
+        def run():
+            def progress_callback(ptype, msg, pct=0):
+                if ptype == "progress":
+                    window.after(0, lambda m=msg, p=pct: _update_progress_2(m, p))
+                elif ptype == "done":
+                    window.after(0, lambda m=msg: _finish_parse_2(True, m))
+                elif ptype == "error":
+                    window.after(0, lambda m=msg: _finish_parse_2(False, m))
+                elif ptype == "cancelled":
+                    window.after(0, lambda m=msg: _finish_parse_2(False, m))
 
-        try:
-            result = batch_parse(selected_uids, batch_save_path, callback=progress_callback, cancel_event=cancel_event_2, target_date=target_date)
-            if result.get("cancelled"):
-                pass  # _finish_parse_2 already called via callback
-            elif result.get("success"):
-                window.after(0, lambda: _finish_parse_2(
-                    True,
-                    f"批量解析完成：成功 {result.get('success_count', 0)}/{result.get('total', 0)} 个视频"
-                ))
-            else:
-                window.after(0, lambda: _finish_parse_2(
-                    False,
-                    result.get("error", "解析失败")
-                ))
-        except Exception as e:
-            import traceback
-            window.after(0, lambda: _finish_parse_2(False, str(e)))
+            try:
+                result = batch_parse(selected_uids, batch_save_path, callback=progress_callback, cancel_event=cancel_event_2, target_date=target_date)
+                if result.get("cancelled"):
+                    pass
+                elif result.get("success"):
+                    window.after(0, lambda: _finish_parse_2(
+                        True,
+                        f"批量解析完成：成功 {result.get('success_count', 0)}/{result.get('total', 0)} 个视频"
+                    ))
+                else:
+                    window.after(0, lambda: _finish_parse_2(
+                        False,
+                        result.get("error", "解析失败")
+                    ))
+            except Exception as e:
+                import traceback
+                window.after(0, lambda: _finish_parse_2(False, str(e)))
 
-    threading.Thread(target=run, daemon=True).start()
+        threading.Thread(target=run, daemon=True).start()
+    except Exception as e:
+        import traceback
+        _debug(f"button_5 ERROR: {e}\n{traceback.format_exc()}")
+        messagebox.showerror("错误", str(e))
 
 
 def _update_progress_2(msg, pct):

@@ -35,3 +35,11 @@
 [2026-07-20 21:55:39] 保存路径已选: E:/video2txt
 [2026-07-21 08:48:00] 已保存 7 位UP主到Excel
 [2026-07-21 09:19:20] 已保存 7 位UP主到Excel
+[2026-07-21 09:24:55] 保存路径已选: E:/video2txt
+[2026-07-21 09:31:11] button_5 CLICKED
+[2026-07-21 09:31:11] button_5 ERROR: name 'combo_year_2' is not defined
+Traceback (most recent call last):
+  File "gui.py", line 413, in button_5_clicked
+  File "gui.py", line 439, in _button_5_clicked_impl
+NameError: name 'combo_year_2' is not defined
+
