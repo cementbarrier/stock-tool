@@ -116,27 +116,29 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
             time.sleep(1)
 
     # ── Phase 2: 生成批次总结文档 ──
-    transcribe_success = [r for r in results if r.get("success") and r.get("path")]
-    total_ok = len(transcribe_success)
-    if total_ok == 0:
+    # 仅本次新转写的视频参与 AI 总结，存量跳过的不参与
+    transcribe_success = [r for r in results if r.get("success") and r.get("path") and not r.get("skipped")]
+    new_count = len(transcribe_success)
+    if new_count == 0:
+        skipped_count = sum(1 for r in results if r.get("skipped"))
         if callback:
-            callback("done", f"批量解析完成：成功转写 0/{len(results)} 个视频", 100)
+            callback("done", f"批量解析完成：无新增转写，跳过 AI 总结（存量 {skipped_count} 个已有转写）", 100)
         return _build_return(results)
 
     if callback:
-        callback("progress", f"转写完成，正在生成批次总结（共 {total_ok} 个视频）...", 99)
+        callback("progress", f"转写完成，正在生成批次总结（新增 {new_count} 个视频）...", 99)
 
     batch_summary_path = _generate_batch_summary(save_dir, transcribe_success)
 
     # ── 邮件通知 ──
     try:
         from backend.notifier import notify_batch_done
-        notify_batch_done(save_dir, total_ok, len(results), batch_summary_path)
+        notify_batch_done(save_dir, new_count, len(results), batch_summary_path)
     except Exception:
         pass
 
     if callback:
-        done_msg = f"批量解析完成：转写 {total_ok}/{len(results)} 个视频"
+        done_msg = f"批量解析完成：新增转写 {new_count}/{len(results)} 个视频"
         if batch_summary_path:
             done_msg += f"，总结已生成"
         callback("done", done_msg, 100)
