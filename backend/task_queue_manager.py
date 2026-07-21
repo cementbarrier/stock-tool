@@ -12,7 +12,7 @@ QUEUE_DIR = os.path.join(os.path.dirname(__file__), "task_queue")
 QUEUE_FILE = os.path.join(QUEUE_DIR, "llm_delay_queue.json")
 _lock = threading.Lock()
 
-TaskType = Literal["single_summary", "daily_report"]
+TaskType = Literal["single_summary", "daily_report", "batch_parse"]
 TaskStatus = Literal["pending", "finished", "failed", "cancelled"]
 
 

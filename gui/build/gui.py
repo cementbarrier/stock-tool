@@ -431,6 +431,29 @@ def button_5_clicked():
         # 在主线程获取日期（避免子线程操作tk变量）
         target_date = f"{combo_year_2.get()}-{combo_month_2.get().zfill(2)}-{combo_day_2.get().zfill(2)}"
 
+        # ── 高峰时段检查：询问是否加入低谷延迟队列 ──
+        if time_price_judge.is_peak():
+            result = messagebox.askyesno(
+                "高峰时段提醒",
+                f"当前为 DeepSeek 高峰时段（双倍价）。\n"
+                f"选择「是」立即执行，「否」加入低谷延迟队列，18点后自动处理。"
+            )
+            if not result:
+                task_id = task_queue_manager.enqueue(
+                    task_type="batch_parse",
+                    payload={
+                        "uid_list": selected_uids,
+                        "save_dir": batch_save_path,
+                        "target_date": target_date,
+                    },
+                )
+                messagebox.showinfo(
+                    "已加入延迟队列",
+                    f"定期跟踪已加入低谷延迟队列。\n"
+                    f"队列待处理: {task_queue_manager.get_pending_count()} 条"
+                )
+                return
+
         # 重置取消事件
         cancel_event_2.clear()
 

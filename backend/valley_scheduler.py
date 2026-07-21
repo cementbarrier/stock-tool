@@ -3,6 +3,7 @@
 """
 import threading
 import time
+import os
 import logging
 from pathlib import Path
 from typing import Optional, Callable
@@ -105,6 +106,22 @@ def _execute_one(task: dict):
     elif task_type == "daily_report":
         # v0.9.5 实现批量报告逻辑
         pass
+
+    elif task_type == "batch_parse":
+        from backend.batch_parser import batch_parse
+        uid_list = payload.get("uid_list", [])
+        save_dir = payload.get("save_dir", "")
+        target_date = payload.get("target_date", "")
+        if not uid_list or not save_dir:
+            update_status(task_id, "failed", error_msg="Missing uid_list or save_dir")
+            return
+        result = batch_parse(uid_list, save_dir, target_date=target_date or None)
+        if result.get("success"):
+            update_status(task_id, "finished",
+                          result_save_path=os.path.join(save_dir, "batch_output"))
+        else:
+            update_status(task_id, "failed",
+                          error_msg=result.get("error", "batch_parse failed"))
 
     else:
         logger.warning(f"Unknown task type: {task_type}")
