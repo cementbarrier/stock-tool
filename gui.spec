@@ -30,6 +30,7 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
+    icon=['gui\\build\\assets\\app_icon.ico'],
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

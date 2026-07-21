@@ -756,10 +756,10 @@ _handling_minimize = False
 
 
 def _create_tray_image():
-    """生成托盘图标（64x64 绿色K线风格）"""
+    """生成托盘图标（64x64 红色K线风格）"""
     img = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    draw.rectangle([8, 8, 56, 56], fill=(34, 139, 34), outline=(0, 100, 0), width=2)
+    draw.rectangle([8, 8, 56, 56], fill=(178, 34, 34), outline=(128, 0, 0), width=2)
     draw.line([(20, 42), (30, 26), (38, 36), (48, 20)], fill=(255, 255, 255), width=4)
     return img
 
