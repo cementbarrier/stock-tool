@@ -59,9 +59,10 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
                 callback("cancelled", f"批量解析已取消，已完成 {idx}/{total} 个UP主", 0)
             return _build_return(results, cancelled=True)
 
-        up_pct = int(idx / total * 100)
+        # 进度：查询阶段占每个UP主 30% 权重，转写占 70%
+        up_pct_start = int(idx / total * 100)
         if callback:
-            callback("progress", f"正在查询UP主 {uid}... ({idx+1}/{total})", up_pct)
+            callback("progress", f"正在查询UP主 {uid}... ({idx+1}/{total})", up_pct_start)
 
         date_label = target_date if target_date else "今日"
         videos = fetcher.get_up_videos(uid, headers, target_date=target_date, cancel_event=cancel_event)
@@ -72,12 +73,15 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
             return _build_return(results, cancelled=True)
 
         if not videos:
+            # 无视频：查询完成即跳过，进度跳到下一个UP主
+            up_pct_next = int((idx + 1) / total * 100)
             if callback:
-                callback("progress", f"UP主 {uid} {date_label}无新视频，跳过", up_pct)
+                callback("progress", f"UP主 {uid} {date_label}无新视频，跳过", up_pct_next)
             continue
 
+        up_pct_query_done = min(int((idx + 0.3) / total * 100), 99)
         if callback:
-            callback("progress", f"UP主 {uid} 有 {len(videos)} 个新视频，开始转写...", up_pct)
+            callback("progress", f"UP主 {uid} 有 {len(videos)} 个新视频，开始转写...", up_pct_query_done)
 
         for v_idx, v in enumerate(videos):
             if cancel_event.is_set():
@@ -90,8 +94,7 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
             if not bvid:
                 continue
 
-            sub_pct = (v_idx + 1) / len(videos)
-            batch_pct = min(int((idx + sub_pct) / total * 100), 99)
+            batch_pct = min(int((idx + 0.3 + 0.7 * (v_idx + 1) / len(videos)) / total * 100), 99)
 
             date_prefix = datetime.now().strftime("%m%d")
             video_dir = Path(save_dir) / date_prefix / uid / bvid
