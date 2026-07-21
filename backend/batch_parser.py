@@ -100,6 +100,14 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
             video_dir = Path(save_dir) / date_prefix / uid / bvid
             video_dir.mkdir(parents=True, exist_ok=True)
 
+            # 已有转写文件则跳过
+            existing_txt = list(video_dir.glob("*.txt"))
+            if existing_txt:
+                if callback:
+                    callback("progress", f"  跳过（已有转写）：{title} ({bvid})", batch_pct)
+                results.append({"uid": uid, "bvid": bvid, "title": title, "video_dir": str(video_dir), "success": True, "path": str(existing_txt[0]), "skipped": True})
+                continue
+
             if callback:
                 callback("progress", f"  转写：{title} ({bvid})", batch_pct)
 

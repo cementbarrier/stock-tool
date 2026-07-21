@@ -358,7 +358,9 @@ def button_4_clicked():
                 elif ptype == "cancelled":
                     window.after(0, lambda: _finish_parse_1(False, msg))
             result = parse_single(url, selected_save_path, callback=progress_cb, cancel_event=cancel_event_1)
-            if result.get("success"):
+            if result.get("skipped"):
+                window.after(0, lambda bv=url: _finish_parse_1(True, "已有转写文件，已跳过", bv=bv))
+            elif result.get("success"):
                 parsed_path = result.get("path", "")
                 window.after(0, lambda bv=url, p=parsed_path: _finish_parse_1(True, "字幕已保存", bv=bv, path=p))
             else:

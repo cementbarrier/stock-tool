@@ -95,6 +95,13 @@ def parse_single(bv_id: str, save_dir: str, callback=None, cancel_event=None):
     output = Path(save_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)
 
+    # 已有转写文件则跳过
+    existing_txt = list(output.glob("*.txt"))
+    if existing_txt:
+        if callback:
+            callback("progress", f"已存在转写文件，跳过", 100)
+        return {"success": True, "path": str(existing_txt[0]), "skipped": True}
+
     if callback:
         callback("progress", "启动 bili2text...", 0)
 
