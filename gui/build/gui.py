@@ -1705,12 +1705,10 @@ def create_main_window():
 
     # 手动执行按钮
     def _manual_flush():
-        if not time_price_judge.is_valley():
-            messagebox.showwarning("当前为高峰", "高峰时段不支持手动执行，请等待低谷窗口。")
-            return
-        n = valley_scheduler.flush_now()
+        n = valley_scheduler.flush_now(force=True)
         messagebox.showinfo("执行完成", f"已处理 {n} 条队列任务")
-        _refresh_queue_status()
+        if _gui_refresh_queue:
+            _gui_refresh_queue()
 
     flush_btn = Button(
         page_frame_3, text="立即执行全部队列", command=_manual_flush,
@@ -1728,7 +1726,7 @@ def create_main_window():
             text=f"待执行: {n} 条  |  {time_price_judge.get_price_label()}",
             fg="#4CAF50" if is_val else "#FF5722"
         )
-        flush_btn.config(state="normal" if is_val else "disabled")
+        flush_btn.config(state="normal" if n > 0 else "disabled")
 
     _refresh_queue_status()
 

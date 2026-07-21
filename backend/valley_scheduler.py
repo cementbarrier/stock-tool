@@ -42,12 +42,13 @@ def stop():
     logger.info("Valley scheduler stopped")
 
 
-def flush_now() -> int:
+def flush_now(force: bool = False) -> int:
     """
-    手动立即执行所有待处理任务（仅低谷可调用）。
+    手动立即执行所有待处理任务。
+    force=True 时跳过峰谷检查（用于手动触发）。
     返回执行的任务数。
     """
-    if not is_valley():
+    if not force and not is_valley():
         return 0
     tasks = dequeue(limit=50)
     executed = 0

@@ -119,3 +119,12 @@ AttributeError: module '__main__' has no attribute 'combo_year_2'
 [2026-07-21 12:29:24] button_5 CLICKED
 [2026-07-21 14:27:12] button_5 CLICKED
 [2026-07-21 14:27:23] button_5 CLICKED
+[2026-07-21 14:40:08] button_5 CLICKED
+[2026-07-21 14:40:44] button_5 CLICKED
+[2026-07-21 14:45:40] button_5 CLICKED
+[2026-07-21 14:45:41] button_5 ERROR: name '_refresh_queue_status' is not defined
+Traceback (most recent call last):
+  File "gui.py", line 456, in button_5_clicked
+NameError: name '_refresh_queue_status' is not defined
+
+[2026-07-21 14:50:00] button_5 CLICKED
