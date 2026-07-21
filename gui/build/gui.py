@@ -453,7 +453,8 @@ def button_5_clicked():
                         "target_date": target_date,
                     },
                 )
-                _refresh_queue_status()
+                if _gui_refresh_queue:
+                    _gui_refresh_queue()
                 messagebox.showinfo(
                     "已加入延迟队列",
                     f"定期跟踪已加入低谷延迟队列。\n"
@@ -1086,7 +1087,8 @@ def create_main_window():
                 task_id = single_summary_client.summarize_single(
                     last_parsed_bvid, transcript, force=False
                 )
-                _refresh_queue_status()
+                if _gui_refresh_queue:
+                    _gui_refresh_queue()
                 summary_result_1.config(
                     text=f"已加入延迟队列（{task_id.get('task_id', '?')}），"
                          f"低谷时段自动生成摘要。\n队列待处理: {task_queue_manager.get_pending_count()} 条"
