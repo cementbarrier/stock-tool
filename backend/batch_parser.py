@@ -62,11 +62,11 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None)
         if callback:
             callback("progress", f"正在查询UP主 {uid}... ({idx+1}/{total})", up_pct)
 
-        videos = fetcher.get_up_videos(uid, headers, hours=48)
+        videos = fetcher.get_up_videos(uid, headers)
 
         if not videos:
             if callback:
-                callback("progress", f"UP主 {uid} 48小时内无新视频，跳过", up_pct)
+                callback("progress", f"UP主 {uid} 今日无新视频，跳过", up_pct)
             continue
 
         if callback:
