@@ -73,3 +73,15 @@ Traceback (most recent call last):
   File "gui.py", line 432, in button_5_clicked
 NameError: name 'combo_year_2' is not defined
 
+[2026-07-21 09:41:37] button_5 CLICKED
+[2026-07-21 09:41:37] button_5 ERROR: name 'combo_year_2' is not defined
+Traceback (most recent call last):
+  File "gui.py", line 432, in button_5_clicked
+NameError: name 'combo_year_2' is not defined
+
+[2026-07-21 09:41:53] button_5 CLICKED
+[2026-07-21 09:41:53] button_5 ERROR: name 'combo_year_2' is not defined
+Traceback (most recent call last):
+  File "gui.py", line 432, in button_5_clicked
+NameError: name 'combo_year_2' is not defined
+
