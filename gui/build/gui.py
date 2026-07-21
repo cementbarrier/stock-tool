@@ -338,10 +338,14 @@ def button_4_clicked():
     button_4.place_forget()
     progress_label_1.configure(text="  正在初始化... 0%")
     progress_label_1.place(x=30, y=260, width=585, height=18)
+    progress_label_1.tkraise()
     progress_bar_1.configure(value=0, maximum=100, mode="determinate")
     progress_bar_1.place(x=30, y=282, width=500, height=14)
+    progress_bar_1.tkraise()
     button_stop_1.configure(command=lambda: cancel_event_1.set())
     button_stop_1.place(x=540, y=280, width=75, height=20)
+    button_stop_1.tkraise()
+    window.update_idletasks()
 
     def run():
         try:
@@ -433,10 +437,14 @@ def button_5_clicked():
     button_5.place_forget()
     progress_label_2.configure(text=f"  准备处理 {len(selected_uids)} 个UP主... 0%")
     progress_label_2.place(x=6, y=610, width=310, height=18)
+    progress_label_2.tkraise()
     progress_bar_2.configure(value=0, maximum=100, mode="determinate")
     progress_bar_2.place(x=6, y=632, width=240, height=14)
+    progress_bar_2.tkraise()
     button_stop_2.configure(command=lambda: cancel_event_2.set())
     button_stop_2.place(x=254, y=629, width=65, height=20)
+    button_stop_2.tkraise()
+    window.update_idletasks()
 
     def run():
         def progress_callback(ptype, msg, pct=0):
