@@ -429,8 +429,7 @@ def button_5_clicked():
             return
 
         # 在主线程获取日期（避免子线程操作tk变量）
-        import __main__
-        target_date = f"{__main__.combo_year_2.get()}-{__main__.combo_month_2.get().zfill(2)}-{__main__.combo_day_2.get().zfill(2)}"
+        target_date = f"{combo_year_2.get()}-{combo_month_2.get().zfill(2)}-{combo_day_2.get().zfill(2)}"
 
         # 重置取消事件
         cancel_event_2.clear()
@@ -1308,6 +1307,8 @@ def create_main_window():
         fill="#000000",
         font=("Inter", 14 * -1, "normal")
     )
+
+    global combo_year_2, combo_month_2, combo_day_2
 
     today = _dt.date.today()
     years = [str(y) for y in range(2020, today.year + 2)]
