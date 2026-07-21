@@ -26,6 +26,10 @@ from backend.up_manager import load_up_list, save_up_list, fetch_up_name
 from backend import config_manager
 
 from pathlib import Path
+
+# 模块级队列刷新回调（供调度线程通知 GUI 刷新标签）
+_gui_refresh_queue = None
+
 from tkinter import (
     BooleanVar,
     Button,
@@ -1712,7 +1716,7 @@ def create_main_window():
     )
     flush_btn.place(x=30, y=535, width=180, height=32)
 
-    def _refresh_queue_status():
+    def _refresh_queue_status(_n=None):
         n = task_queue_manager.get_pending_count()
         is_val = time_price_judge.is_valley()
         zone = "低谷平价" if is_val else "高峰双倍"
@@ -1832,13 +1836,17 @@ def create_main_window():
 
     window.resizable(False, False)
     _init_tray_icon()
+
+    global _gui_refresh_queue
+    _gui_refresh_queue = _refresh_queue_status
+
     return window
 
 
 window = create_main_window()
 
 # 启动低谷调度线程
-valley_scheduler.start()
+valley_scheduler.start(callback=lambda n: window.after(0, _gui_refresh_queue) if _gui_refresh_queue else None)
 
 if __name__ == "__main__":
     # 单实例锁：防止托盘图标消失后用户重复启动导致进程堆积

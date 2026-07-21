@@ -106,9 +106,10 @@ def increment_retry(task_id: str) -> int:
 
 
 def get_pending_count() -> int:
-    """获取待执行任务数量"""
-    tasks = _read_queue()
-    return sum(1 for t in tasks if t.get("status") == "pending")
+    """获取待执行任务数量（线程安全）"""
+    with _lock:
+        tasks = _read_queue()
+        return sum(1 for t in tasks if t.get("status") == "pending")
 
 
 def get_queue_stats() -> dict:
