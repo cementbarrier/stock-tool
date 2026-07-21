@@ -1691,8 +1691,11 @@ def create_main_window():
     valley_check = Checkbutton(
         page_frame_3, text="启用低谷错峰队列", variable=valley_var,
         bg="#FFFFFF", font=("Inter", 13),
-        command=lambda: config_manager.set_setting(
-            "valley_scheduler_enabled", "true" if valley_var.get() else "false")
+        command=lambda: (
+            config_manager.set_setting(
+                "valley_scheduler_enabled", "true" if valley_var.get() else "false"),
+            _gui_refresh_queue and _gui_refresh_queue()
+        )
     )
     valley_check.place(x=30, y=502)
 
@@ -1721,12 +1724,16 @@ def create_main_window():
     def _refresh_queue_status(_n=None):
         n = task_queue_manager.get_pending_count()
         is_val = time_price_judge.is_valley()
+        enabled = valley_var.get()
         zone = "低谷平价" if is_val else "高峰双倍"
         queue_status_label.config(
             text=f"待执行: {n} 条  |  {time_price_judge.get_price_label()}",
             fg="#4CAF50" if is_val else "#FF5722"
         )
-        flush_btn.config(state="normal" if n > 0 else "disabled")
+        if enabled:
+            flush_btn.config(state="disabled", fg="#666666")
+        else:
+            flush_btn.config(state="normal" if n > 0 else "disabled", fg="#FFFFFF")
 
     _refresh_queue_status()
 
