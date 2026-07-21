@@ -345,7 +345,6 @@ def button_4_clicked():
     button_stop_1.configure(command=lambda: cancel_event_1.set())
     button_stop_1.place(x=540, y=280, width=75, height=20)
     button_stop_1.tkraise()
-    window.update_idletasks()
 
     def run():
         try:
@@ -444,7 +443,6 @@ def button_5_clicked():
     button_stop_2.configure(command=lambda: cancel_event_2.set())
     button_stop_2.place(x=254, y=629, width=65, height=20)
     button_stop_2.tkraise()
-    window.update_idletasks()
 
     def run():
         def progress_callback(ptype, msg, pct=0):
