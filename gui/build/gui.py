@@ -429,8 +429,8 @@ def button_5_clicked():
             return
 
         # 在主线程获取日期（避免子线程操作tk变量）
-        _g = globals()
-        target_date = f"{_g['combo_year_2'].get()}-{_g['combo_month_2'].get().zfill(2)}-{_g['combo_day_2'].get().zfill(2)}"
+        import __main__
+        target_date = f"{__main__.combo_year_2.get()}-{__main__.combo_month_2.get().zfill(2)}-{__main__.combo_day_2.get().zfill(2)}"
 
         # 重置取消事件
         cancel_event_2.clear()
