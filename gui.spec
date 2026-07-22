@@ -1,30 +1,23 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_submodules
 
+# 自动收集 backend 包的所有子模块
+backend_hidden = collect_submodules('backend')
 
 a = Analysis(
     ['gui\\build\\gui.py'],
-    pathex=['.'],
+    pathex=['.', 'scripts'],
     binaries=[],
     datas=[('scripts', 'scripts')],
-    hiddenimports=[
-        'backend',
-        'backend.config_manager',
-        'backend.single_parser',
-        'backend.batch_parser',
-        'backend.up_manager',
-        'backend.valley_scheduler',
-        'backend.single_summary_client',
-        'backend.time_price_judge',
-        'backend.task_queue_manager',
-        'backend.llm_client',
-        'backend.notifier',
-        'backend.parsed_records',
+    hiddenimports=backend_hidden + [
+        # scripts/ 下的独立模块（不在包内，需手动声明）
         'step1_fetch_videos',
         'step2_download_audio',
         'step3_transcribe',
         'step4_extract_stocks',
         'step5_analyze',
         'run_pipeline',
+        # pystray 托盘
         'pystray',
         'pystray._win32',
         'pystray._base',
@@ -34,6 +27,32 @@ a = Analysis(
         'six.moves.queue',
         'PIL.Image',
         'PIL.ImageDraw',
+        # 第三方依赖（script 中用到但可能未被自动追踪）
+        'requests',
+        'json',
+        're',
+        'datetime',
+        'subprocess',
+        'shutil',
+        'threading',
+        'queue',
+        'time',
+        'sys',
+        'os',
+        'pathlib',
+        'collections',
+        'typing',
+        'traceback',
+        'argparse',
+        'logging',
+        'hashlib',
+        'urllib',
+        'urllib.parse',
+        'csv',
+        'io',
+        'math',
+        'functools',
+        'itertools',
     ],
     hookspath=[],
     hooksconfig={},
