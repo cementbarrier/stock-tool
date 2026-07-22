@@ -1,4 +1,6 @@
-# stock-tool 项目上下文（2026-07-21）
+# ChartBoard 项目上下文（2026-07-22）
+
+ChartBoard 图表看板——市场数据浏览、K线复盘、行情筛查、指标可视化。定位：观测研判端。配套项目 SignalBoard（策略推演/信号生成端）。
 
 将以下内容粘贴到新对话开头，AI 即可接续工作。
 
@@ -9,7 +11,7 @@
 - **项目路径**：`E:\stock-tool`
 - **GitHub**：`github.com:cementbarrier/stock-tool.git`
 - **入口文件**：`gui/build/gui.py`（Tkinter GUI）、`scripts/run_pipeline.py`（定期跟踪流水线）
-- **桌面快捷方式**：`gui.exe.lnk` → `E:\stock-tool\dist\gui.exe`
+- **桌面快捷方式**：`ChartBoard` → `E:\stock-tool\dist\gui.exe`
 
 ## 部署流程（极其重要）
 

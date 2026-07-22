@@ -812,7 +812,7 @@ def _init_tray_icon():
         pystray.MenuItem('显示', _restore_window, default=True),
         pystray.MenuItem('退出', _quit_app),
     )
-    _tray_icon = pystray.Icon('stock_tool', _create_tray_image(), '股票工具', menu)
+    _tray_icon = pystray.Icon('chartboard', _create_tray_image(), 'ChartBoard', menu)
     threading.Thread(target=_tray_icon.run, daemon=True).start()
 
 
@@ -843,7 +843,7 @@ def create_main_window():
     global progress_label_2, progress_bar_2, button_stop_2, cancel_event_2
     global entry_single_path_text, canvas_page_1
     window = Tk()
-    window.title("股票工具")
+    window.title("ChartBoard")
     window.geometry("994x666")
     window.configure(bg="#FFFFFF")
     center_window(window, 994, 666)
