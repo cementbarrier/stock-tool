@@ -231,9 +231,59 @@ def _generate_batch_summary(save_dir: str, transcribe_success: list) -> str | No
     if not result:
         return None
 
+    import re
+    import json
+
     today = datetime.now().strftime("%Y-%m-%d")
     report_path = Path(save_dir) / BATCH_SUMMARY_FILENAME.format(date=today)
     report_path.write_text(result, encoding="utf-8")
+
+    # ── 额外生成结构化 JSON ──
+    videos = []
+    entry_signals = []
+
+    # 解析「视频观点速览」表格
+    # 匹配 | BVxxxxxxxx... | 观点文本 |
+    video_pattern = re.compile(r"^\|\s*(BV[0-9A-Za-z]+)\s*\|\s*(.+?)\s*\|", re.MULTILINE)
+    for m in video_pattern.finditer(result):
+        bvid = m.group(1)
+        opinion = m.group(2).strip()
+        if bvid.startswith("BV"):
+            videos.append({"bvid": bvid, "opinion": opinion})
+
+    # 解析「入场参考」表格
+    # 定位 "二、入场参考" 之后的表格行
+    entry_section_start = result.find("二、入场参考")
+    if entry_section_start != -1:
+        entry_section = result[entry_section_start:]
+        entry_pattern = re.compile(r"^\|\s*(.+?)\s*\|\s*(.+?)\s*\|", re.MULTILINE)
+        header_skipped = False
+        for m in entry_pattern.finditer(entry_section):
+            col1 = m.group(1).strip()
+            col2 = m.group(2).strip()
+            # 跳过表头行
+            if not header_skipped and ("板块" in col1 or "标的" in col1):
+                header_skipped = True
+                continue
+            # 跳过对齐分隔行（|---|---|）
+            if col1.startswith("-") and col2.startswith("-"):
+                continue
+            # 排除"本批次无可入场标的"
+            if "无可入场" in col1 or "无可入场" in col2:
+                break
+            entry_signals.append({"sector": col1, "reason": col2})
+
+    json_data = {
+        "date": today,
+        "video_count": len(videos),
+        "videos": videos,
+        "entry_signals": entry_signals,
+        "raw_text": result,
+    }
+
+    json_path = Path(save_dir) / f"批次总结_{today}.json"
+    json_path.write_text(json.dumps(json_data, ensure_ascii=False, indent=2), encoding="utf-8")
+
     return str(report_path)
 
 
