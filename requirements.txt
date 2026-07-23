@@ -6,3 +6,4 @@ PyInstaller==6.21.0
 pystray==0.19.5
 requests==2.34.2
 urllib3==2.7.0
+（内容由AI生成，仅供参考）

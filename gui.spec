@@ -3,13 +3,22 @@ from PyInstaller.utils.hooks import collect_submodules
 
 # 自动收集 backend 包的所有子模块
 backend_hidden = collect_submodules('backend')
+# 自动收集 gui 包（含 gui.build.pages 下的拆分模块）
+gui_hidden = collect_submodules('gui')
 
 a = Analysis(
     ['gui\\build\\gui.py'],
     pathex=['.', 'scripts'],
     binaries=[],
     datas=[('scripts', 'scripts')],
-    hiddenimports=backend_hidden + [
+    hiddenimports=backend_hidden + gui_hidden + [
+        # gui/build/pages 下的拆分模块（绝对导入，需确保被收集）
+        'gui.build.utils',
+        'gui.build.pages',
+        'gui.build.pages.page_parse',
+        'gui.build.pages.page_batch',
+        'gui.build.pages.page_config',
+        'gui.build.pages.tray',
         # scripts/ 下的独立模块（不在包内，需手动声明）
         'step1_fetch_videos',
         'step2_download_audio',
