@@ -22,7 +22,7 @@ from backend.batch_parser import batch_parse, regenerate_summary_for_today
 from backend.up_manager import load_up_list, save_up_list, fetch_up_name
 from backend import config_manager, time_price_judge, task_queue_manager
 
-from ..utils import debug, peak_dialog
+from gui.build.utils import debug, peak_dialog
 
 # ── 模块级状态 ──
 batch_save_path = config_manager.get_setting("batch_save_path")
