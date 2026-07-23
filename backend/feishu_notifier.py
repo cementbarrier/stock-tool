@@ -119,61 +119,16 @@ def send_card(title: str, elements: list) -> bool:
         return send_text(fallback)
 
 
-def notify_single_done(bvid: str, title: str = "", summary: str = ""):
+def notify_single_done(bvid: str = "", title: str = "", summary: str = ""):
     """单视频解析完成通知"""
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    lines = [
-        f"单视频解析完成",
-        f"时间：{now}",
-        f"BV号：{bvid}",
-    ]
-    if title:
-        lines.append(f"标题：{title}")
-    if summary:
-        # 截取摘要前 200 字
-        short = summary[:200] + "..." if len(summary) > 200 else summary
-        lines.append(f"摘要：{short}")
-
-    text = "\n".join(lines)
-    return send_text(text)
+    return send_text("老板，视频转写好了")
 
 
-def notify_batch_done(save_dir: str, success_count: int, total: int,
+def notify_batch_done(save_dir: str = "", success_count: int = 0, total: int = 0,
                       batch_summary_path: str | None = None,
                       video_list: list | None = None):
-    """
-    批量解析完成通知。包含解析视频列表和完成统计。
-
-    Args:
-        save_dir: 保存目录
-        success_count: 成功数
-        total: 总数
-        batch_summary_path: 批次总结文件路径
-        video_list: 视频列表 [{"bvid": "...", "title": "..."}, ...]
-    """
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    lines = [
-        f"批量解析完成",
-        f"时间：{now}",
-        f"结果：{success_count}/{total} 个视频",
-        f"保存路径：{save_dir}",
-    ]
-    if batch_summary_path:
-        lines.append(f"批次总结：{batch_summary_path}")
-
-    if video_list:
-        lines.append("")
-        lines.append("解析视频：")
-        for i, v in enumerate(video_list[:20], 1):  # 最多显示20条
-            bvid = v.get("bvid", "?")
-            title = v.get("title", "")
-            t_short = title[:40] + "..." if len(title) > 40 else title
-            lines.append(f"  {i}. [{bvid}] {t_short}")
-        if len(video_list) > 20:
-            lines.append(f"  ... 共 {len(video_list)} 个视频")
-
-    text = "\n".join(lines)
-    return send_text(text)
+    """批量解析完成通知"""
+    return send_text("老板，视频转写好了")
 
 
 def test_webhook(webhook_url: str) -> tuple:
@@ -187,7 +142,7 @@ def test_webhook(webhook_url: str) -> tuple:
     payload = {
         "msg_type": "text",
         "content": {
-            "text": f"[BiliDigest] 测试通知\n时间：{now}\n\n如果你收到此消息，说明飞书 Webhook 配置成功。"
+            "text": "老板，视频转写好了"
         }
     }
 
