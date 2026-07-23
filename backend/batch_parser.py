@@ -170,6 +170,17 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
     except Exception:
         pass
 
+    # ── 飞书通知 ──
+    try:
+        from backend.feishu_notifier import notify_batch_done as notify_feishu_batch
+        video_list = []
+        for r in results:
+            if r.get("success") and r.get("bvid"):
+                video_list.append({"bvid": r["bvid"], "title": r.get("title", "")})
+        notify_feishu_batch(save_dir, new_count, len(results), batch_summary_path, video_list)
+    except Exception:
+        pass
+
     if callback:
         done_msg = f"批量解析完成：新增转写 {new_count}/{len(results)} 个视频"
         if batch_summary_path:

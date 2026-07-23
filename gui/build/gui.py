@@ -143,6 +143,7 @@ def show_page(index):
 
 selected_save_path = ""
 batch_save_path = config_manager.get_setting("batch_save_path")
+DEFAULT_FEISHU_WEBHOOK = "https://open.feishu.cn/open-apis/bot/v2/hook/43afc324-86c7-41f7-b82c-4c9a5a2a0426"
 
 # ── 调试日志 ──
 import datetime as _dt
@@ -402,6 +403,18 @@ def _finish_parse_1(success, msg, bv="", path=""):
     if success and bv and path:
         last_parsed_bvid = bv
         last_transcript_path_var = path
+        # 飞书通知：单视频解析完成
+        try:
+            from backend.feishu_notifier import notify_single_done
+            _title = ""
+            try:
+                from backend.single_parser import _get_video_title
+                _title = _get_video_title(bv)
+            except Exception:
+                pass
+            threading.Thread(target=notify_single_done, args=(bv, _title), daemon=True).start()
+        except Exception:
+            pass
         # 显示实时价格标签和摘要按钮
         price_label = getattr(_finish_parse_1, "price_label", None)
         if price_label:
@@ -1119,6 +1132,12 @@ def create_main_window():
             summary_btn_1.config(text="生成 AI 摘要", state="normal")
             summary_result_1.config(text=text)
             summary_result_1.place(x=30, y=572, width=585, height=60)
+            # 飞书通知：摘要生成完成
+            try:
+                from backend.feishu_notifier import notify_single_done
+                notify_single_done(last_parsed_bvid, "", text)
+            except Exception:
+                pass
 
         threading.Thread(target=run, daemon=True).start()
 
@@ -1793,9 +1812,73 @@ def create_main_window():
         relief="flat", activebackground="#1976D2", cursor="hand2"
     ).place(x=430, y=648, width=80, height=24)
 
+    # ── 飞书通知 ──
+    canvas_page_3.create_text(
+        30, 690,
+        anchor="nw",
+        text="飞书通知",
+        fill="#888888",
+        font=("Inter", 13 * -1, "bold")
+    )
+
+    feishu_enabled_var = BooleanVar(value=False)
+    if config_manager.get_setting("feishu_enabled") == "true":
+        feishu_enabled_var.set(True)
+
+    feishu_check = Checkbutton(
+        page_frame_3, text="启用飞书机器人通知", variable=feishu_enabled_var,
+        bg="#FFFFFF", font=("Inter", 12),
+        command=lambda: config_manager.set_setting(
+            "feishu_enabled", "true" if feishu_enabled_var.get() else "false")
+    )
+    feishu_check.place(x=30, y=712)
+
+    canvas_page_3.create_text(30, 742, anchor="nw", text="Webhook URL",
+        fill="#000000", font=("Inter", 12 * -1, "normal"))
+
+    feishu_webhook_var = StringVar(value=config_manager.get_setting("feishu_webhook") or "")
+
+    feishu_webhook_entry = Entry(
+        page_frame_3, bd=1, relief="solid",
+        bg="#FFFFFF", fg="#000000", font=("Inter", 11),
+        textvariable=feishu_webhook_var
+    )
+    feishu_webhook_entry.place(x=30, y=760, width=380, height=24)
+
+    def _feishu_save_webhook(*_args):
+        """失焦/回车后自动保存 webhook URL"""
+        url = feishu_webhook_var.get().strip()
+        if url:
+            config_manager.set_setting("feishu_webhook", url)
+        else:
+            config_manager.set_setting("feishu_webhook", DEFAULT_FEISHU_WEBHOOK)
+
+    feishu_webhook_entry.bind("<FocusOut>", _feishu_save_webhook)
+    feishu_webhook_entry.bind("<Return>", _feishu_save_webhook)
+
+    # 测试发送按钮
+    def _test_feishu():
+        url = feishu_webhook_var.get().strip()
+        if not url:
+            messagebox.showwarning("提示", "请先输入飞书 Webhook URL")
+            return
+        from backend.feishu_notifier import test_webhook
+        ok, msg = test_webhook(url)
+        if ok:
+            messagebox.showinfo("发送成功", msg)
+        else:
+            messagebox.showerror("发送失败", msg)
+
+    Button(
+        page_frame_3, text="测试发送", command=_test_feishu,
+        bg="#2196F3", fg="#FFFFFF", font=("Inter", 11, "normal"),
+        borderwidth=0, highlightthickness=0,
+        relief="flat", activebackground="#1976D2", cursor="hand2"
+    ).place(x=420, y=760, width=80, height=24)
+
     # 扩展 content frame 高度确保可滚动
-    page_frame_3.config(height=780)
-    scroll_canvas_3.configure(scrollregion=(0, 0, 776, 780))
+    page_frame_3.config(height=890)
+    scroll_canvas_3.configure(scrollregion=(0, 0, 776, 890))
 
     # ── 保存按钮 ──
     Button(
@@ -1811,7 +1894,7 @@ def create_main_window():
         relief="flat",
         activebackground="#333333",
         cursor="hand2"
-    ).place(x=30, y=720, width=155, height=40)
+    ).place(x=30, y=830, width=155, height=40)
 
     # 页面加载时刷新
     _config_refresh_all(canvas_page_3,

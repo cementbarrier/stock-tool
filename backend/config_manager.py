@@ -29,6 +29,9 @@ DEFAULTS = {
     "email_sender": "",
     "email_auth_code": "",
     "email_receiver": "",
+    # ── 飞书通知 ──
+    "feishu_enabled": "false",
+    "feishu_webhook": "https://open.feishu.cn/open-apis/bot/v2/hook/43afc324-86c7-41f7-b82c-4c9a5a2a0426",
 }
 
 
