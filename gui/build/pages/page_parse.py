@@ -19,7 +19,7 @@ from tkinter import (
 from backend.single_parser import parse_single
 from backend import time_price_judge, single_summary_client, task_queue_manager
 
-from gui.build.utils import create_rounded_rectangle, debug, peak_dialog
+from ..utils import create_rounded_rectangle, debug, peak_dialog
 
 # ── 模块级状态 ──
 selected_save_path = ""

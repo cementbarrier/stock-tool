@@ -18,11 +18,11 @@ from tkinter import (
 )
 from backend import valley_scheduler, config_manager
 
-from gui.build.utils import create_rounded_rectangle, center_window
-from gui.build.pages.page_parse import build_page_parse, set_refresh_callback as _p1_set_refresh
-from gui.build.pages.page_batch import build_page_batch, set_refresh_callback as _p2_set_refresh
-from gui.build.pages.page_config import build_page_config, set_refresh_callback as _p3_set_refresh
-from gui.build.pages.tray import init_tray, setup_window_tray_hooks, set_valley_scheduler
+from .utils import create_rounded_rectangle, center_window
+from .pages.page_parse import build_page_parse, set_refresh_callback as _p1_set_refresh
+from .pages.page_batch import build_page_batch, set_refresh_callback as _p2_set_refresh
+from .pages.page_config import build_page_config, set_refresh_callback as _p3_set_refresh
+from .pages.tray import init_tray, setup_window_tray_hooks, set_valley_scheduler
 
 # ── 全局 pages 列表（供 show_page 切换）──
 pages = []

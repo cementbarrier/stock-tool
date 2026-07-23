@@ -18,7 +18,7 @@ from tkinter import (
 )
 from backend import config_manager, time_price_judge, task_queue_manager, valley_scheduler
 
-from gui.build.utils import create_rounded_rectangle
+from ..utils import create_rounded_rectangle
 
 # 外部注入
 _gui_refresh_queue = None
