@@ -242,7 +242,14 @@ def save_transcript(video, text):
         f.write(f"发布时间: {video.get('pub_time')}\n")
         f.write(f"视频链接: https://www.bilibili.com/video/{bvid}\n")
         f.write(f"UP权重: {video.get('up_weight')}\n")
-        f.write("=" * 50 + "\n\n")
+
+        # 视频简介
+        description = video.get('description', '')
+        if description and description.strip():
+            f.write("\n【视频简介】\n")
+            f.write(f"{description.strip()}\n")
+
+        f.write("\n" + "=" * 50 + "\n\n")
         f.write(text)
 
     return str(filepath)
