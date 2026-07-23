@@ -105,8 +105,8 @@ def _execute_one(task: dict):
         update_status(task_id, "finished", result_save_path=result_path)
 
     elif task_type == "daily_report":
-        # v0.9.5 实现批量报告逻辑
-        pass
+        logger.info("daily_report task type received but not yet implemented")
+        update_status(task_id, "finished")
 
     elif task_type == "batch_parse":
         from backend.batch_parser import batch_parse

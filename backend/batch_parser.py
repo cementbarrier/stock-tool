@@ -4,9 +4,14 @@
 """
 import sys
 import os
+import re
+import json
 import time
+import logging
 from pathlib import Path
 from datetime import datetime
+
+logger = logging.getLogger("batch_parser")
 
 if getattr(sys, 'frozen', False):
     PROJECT_ROOT = Path(sys._MEIPASS)
@@ -22,6 +27,19 @@ import step1_fetch_videos as fetcher
 
 SUMMARY_FILENAME = "ai_summary.txt"
 BATCH_SUMMARY_FILENAME = "批次总结_{date}.txt"
+
+# 每视频最多送入 LLM 的字数（可从 settings.json 覆盖）
+MAX_PER_VIDEO = 1500
+
+
+def _get_max_per_video() -> int:
+    """从配置读取 MAX_PER_VIDEO，默认 1500"""
+    try:
+        from backend.config_manager import get_setting
+        val = get_setting("max_per_video_chars")
+        return int(val) if val else MAX_PER_VIDEO
+    except Exception:
+        return MAX_PER_VIDEO
 
 
 def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None, target_date=None):
@@ -43,10 +61,7 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
         cancel_event = _th.Event()
 
     # 统一日期来源：target_date 优先，否则用今天
-    if target_date:
-        effective_date = datetime.strptime(target_date, "%Y-%m-%d")
-    else:
-        effective_date = datetime.now()
+    effective_date = _parse_effective_date(target_date)
 
     cookies = fetcher.load_cookies()
     if not cookies:
@@ -65,7 +80,6 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
                 callback("cancelled", f"批量解析已取消，已完成 {idx}/{total} 个UP主", 0)
             return _build_return(results, cancelled=True)
 
-        # 进度：查询阶段占每个UP主 30% 权重，转写占 70%
         up_pct_start = int(idx / total * 100)
         if callback:
             callback("progress", f"正在查询UP主 {uid}... ({idx+1}/{total})", up_pct_start)
@@ -79,7 +93,6 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
             return _build_return(results, cancelled=True)
 
         if not videos:
-            # 无视频：查询完成即跳过，进度跳到下一个UP主
             up_pct_next = int((idx + 1) / total * 100)
             if callback:
                 callback("progress", f"UP主 {uid} {date_label}无新视频，跳过", up_pct_next)
@@ -106,7 +119,6 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
             video_dir = Path(save_dir) / date_prefix / uid / bvid
             video_dir.mkdir(parents=True, exist_ok=True)
 
-            # 已有转写文件则跳过
             existing_txt = list(video_dir.glob("*.txt"))
             if existing_txt:
                 if callback:
@@ -122,7 +134,6 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
             time.sleep(1)
 
     # ── Phase 2: 生成批次总结文档 ──
-    # 同一天多次运行时，汇总当天全部转写视频到同一份总结
     today = effective_date.strftime("%Y-%m-%d")
     date_prefix = effective_date.strftime("%m%d")
     today_dir = Path(save_dir) / date_prefix
@@ -142,7 +153,6 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
                 callback("done", f"批量解析完成：无新增转写，跳过 AI 总结（存量 {skipped_count} 个已有转写）", 100)
             return _build_return(results)
 
-    # 当天已有总结 → 合并全部转写 txt 重新生成；否则仅用本次新转写
     if existing_summary.exists() and today_dir.exists():
         summary_input = list(transcribe_success)
         seen = {(r["uid"], r["bvid"]) for r in transcribe_success}
@@ -173,13 +183,9 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
     # ── 飞书通知 ──
     try:
         from backend.feishu_notifier import notify_batch_done as notify_feishu_batch
-        video_list = []
-        for r in results:
-            if r.get("success") and r.get("bvid"):
-                video_list.append({"bvid": r["bvid"], "title": r.get("title", "")})
-        notify_feishu_batch(save_dir, new_count, len(results), batch_summary_path, video_list)
-    except Exception:
-        pass
+        notify_feishu_batch()
+    except Exception as e:
+        logger.debug(f"飞书通知失败: {e}")
 
     if callback:
         done_msg = f"批量解析完成：新增转写 {new_count}/{len(results)} 个视频"
@@ -190,27 +196,20 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
     return _build_return(results, summarized=(1 if batch_summary_path else 0))
 
 
-def _generate_batch_summary(save_dir: str, transcribe_success: list) -> str | None:
-    """
-    将批次内全部转写结果一次发给 LLM，生成总结文档（两部分）。
-
-    Returns:
-        生成的文件路径，失败返回 None
-    """
-    from backend.llm_client import chat
-
-    MAX_PER_VIDEO = 1500  # 每视频最多送 1500 字
-
-    parts = []
-    for r in transcribe_success:
-        bvid = r["bvid"]
-        title = r["title"]
+def _parse_effective_date(target_date: str | None) -> datetime:
+    """解析 target_date，异常时 fallback 到今天"""
+    if target_date:
         try:
-            text = Path(r["path"]).read_text(encoding="utf-8")[:MAX_PER_VIDEO]
-        except Exception:
-            continue
-        parts.append(f"<video bvid=\"{bvid}\" title=\"{title}\">\n{text}\n</video>")
+            return datetime.strptime(target_date, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            logger.warning(f"target_date 格式异常: {target_date!r}，回退到今日")
+    return datetime.now()
 
+
+# ── 批次总结生成（拆分为 3 个子函数 #15）──
+
+def _build_prompt(parts: list[str]) -> str | None:
+    """构建发给 LLM 的批次总结 prompt"""
     if not parts:
         return None
 
@@ -233,6 +232,81 @@ def _generate_batch_summary(save_dir: str, transcribe_success: list) -> str | No
 
 视频文本：
 {all_videos}"""
+    return prompt
+
+
+def _parse_summary_to_json(result: str, today: str) -> dict:
+    """从 LLM 返回文本解析出结构化 JSON"""
+    videos = []
+    entry_signals = []
+
+    video_pattern = re.compile(r"^\|\s*(BV[0-9A-Za-z]+)\s*\|\s*(.+?)\s*\|", re.MULTILINE)
+    for m in video_pattern.finditer(result):
+        bvid = m.group(1)
+        opinion = m.group(2).strip()
+        if bvid.startswith("BV"):
+            videos.append({"bvid": bvid, "opinion": opinion})
+
+    entry_section_start = result.find("二、入场参考")
+    if entry_section_start != -1:
+        entry_section = result[entry_section_start:]
+        entry_pattern = re.compile(r"^\|\s*(.+?)\s*\|\s*(.+?)\s*\|", re.MULTILINE)
+        header_skipped = False
+        for m in entry_pattern.finditer(entry_section):
+            col1 = m.group(1).strip()
+            col2 = m.group(2).strip()
+            if not header_skipped and ("板块" in col1 or "标的" in col1):
+                header_skipped = True
+                continue
+            if col1.startswith("-") and col2.startswith("-"):
+                continue
+            if "无可入场" in col1 or "无可入场" in col2:
+                break
+            entry_signals.append({"sector": col1, "reason": col2})
+
+    return {
+        "date": today,
+        "video_count": len(videos),
+        "videos": videos,
+        "entry_signals": entry_signals,
+        "raw_text": result,
+    }
+
+
+def _save_reports(save_dir: str, result: str, json_data: dict, today: str):
+    """保存 txt 和 json 两份报告"""
+    report_path = Path(save_dir) / BATCH_SUMMARY_FILENAME.format(date=today)
+    report_path.write_text(result, encoding="utf-8")
+
+    json_path = Path(save_dir) / f"批次总结_{today}.json"
+    json_path.write_text(json.dumps(json_data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    return str(report_path)
+
+
+def _generate_batch_summary(save_dir: str, transcribe_success: list) -> str | None:
+    """
+    将批次内全部转写结果一次发给 LLM，生成总结文档。
+
+    Returns:
+        生成的文件路径，失败返回 None
+    """
+    from backend.llm_client import chat
+
+    limit = _get_max_per_video()
+    parts = []
+    for r in transcribe_success:
+        bvid = r["bvid"]
+        title = r["title"]
+        try:
+            text = Path(r["path"]).read_text(encoding="utf-8")[:limit]
+        except Exception:
+            continue
+        parts.append(f"<video bvid=\"{bvid}\" title=\"{title}\">\n{text}\n</video>")
+
+    prompt = _build_prompt(parts)
+    if not prompt:
+        return None
 
     try:
         result = chat(prompt)
@@ -242,60 +316,9 @@ def _generate_batch_summary(save_dir: str, transcribe_success: list) -> str | No
     if not result:
         return None
 
-    import re
-    import json
-
     today = datetime.now().strftime("%Y-%m-%d")
-    report_path = Path(save_dir) / BATCH_SUMMARY_FILENAME.format(date=today)
-    report_path.write_text(result, encoding="utf-8")
-
-    # ── 额外生成结构化 JSON ──
-    videos = []
-    entry_signals = []
-
-    # 解析「视频观点速览」表格
-    # 匹配 | BVxxxxxxxx... | 观点文本 |
-    video_pattern = re.compile(r"^\|\s*(BV[0-9A-Za-z]+)\s*\|\s*(.+?)\s*\|", re.MULTILINE)
-    for m in video_pattern.finditer(result):
-        bvid = m.group(1)
-        opinion = m.group(2).strip()
-        if bvid.startswith("BV"):
-            videos.append({"bvid": bvid, "opinion": opinion})
-
-    # 解析「入场参考」表格
-    # 定位 "二、入场参考" 之后的表格行
-    entry_section_start = result.find("二、入场参考")
-    if entry_section_start != -1:
-        entry_section = result[entry_section_start:]
-        entry_pattern = re.compile(r"^\|\s*(.+?)\s*\|\s*(.+?)\s*\|", re.MULTILINE)
-        header_skipped = False
-        for m in entry_pattern.finditer(entry_section):
-            col1 = m.group(1).strip()
-            col2 = m.group(2).strip()
-            # 跳过表头行
-            if not header_skipped and ("板块" in col1 or "标的" in col1):
-                header_skipped = True
-                continue
-            # 跳过对齐分隔行（|---|---|）
-            if col1.startswith("-") and col2.startswith("-"):
-                continue
-            # 排除"本批次无可入场标的"
-            if "无可入场" in col1 or "无可入场" in col2:
-                break
-            entry_signals.append({"sector": col1, "reason": col2})
-
-    json_data = {
-        "date": today,
-        "video_count": len(videos),
-        "videos": videos,
-        "entry_signals": entry_signals,
-        "raw_text": result,
-    }
-
-    json_path = Path(save_dir) / f"批次总结_{today}.json"
-    json_path.write_text(json.dumps(json_data, ensure_ascii=False, indent=2), encoding="utf-8")
-
-    return str(report_path)
+    json_data = _parse_summary_to_json(result, today)
+    return _save_reports(save_dir, result, json_data, today)
 
 
 def _build_return(results: list, cancelled=False, summarized=0):
@@ -310,8 +333,8 @@ def _build_return(results: list, cancelled=False, summarized=0):
     }
 
 
-def fill_missing_summaries(save_dir: str, callback=None, cancel_event=None):
-    """扫描 save_dir 下所有转写 txt，重新生成批次总结文档
+def regenerate_summary_for_today(save_dir: str, callback=None, cancel_event=None):
+    """扫描 save_dir 下当天转写 txt，重新生成批次总结文档
 
     Args:
         save_dir: 批量解析保存根目录
@@ -328,22 +351,21 @@ def fill_missing_summaries(save_dir: str, callback=None, cancel_event=None):
             callback("error", f"保存目录不存在：{save_dir}", 0)
         return {"success": False, "error": "目录不存在"}
 
-    # 扫描所有转写 txt（排除 SUMMARY_FILENAME 和已有的批次总结）
     today = datetime.now().strftime("%Y-%m-%d")
-    batch_file = root / BATCH_SUMMARY_FILENAME.format(date=today)
+    date_prefix = datetime.now().strftime("%m%d")
+    today_dir = root / date_prefix
 
     entries = []
-    for txt_path in root.rglob("*.txt"):
-        if txt_path.name == SUMMARY_FILENAME:
-            continue
-        if txt_path.name == batch_file.name:
-            continue
-        bvid = txt_path.parent.name
-        entries.append({"bvid": bvid, "title": f"{txt_path.parent.parent.name}/{bvid}", "path": str(txt_path)})
+    if today_dir.exists():
+        for txt_path in today_dir.rglob("*.txt"):
+            if txt_path.name == SUMMARY_FILENAME:
+                continue
+            bvid = txt_path.parent.name
+            entries.append({"bvid": bvid, "title": f"{txt_path.parent.parent.name}/{bvid}", "path": str(txt_path)})
 
     if not entries:
         if callback:
-            callback("done", "未找到转写文件", 100)
+            callback("done", "未找到当天转写文件", 100)
         return {"success": True, "total": 0, "summarized": 0}
 
     if callback:
@@ -358,3 +380,4 @@ def fill_missing_summaries(save_dir: str, callback=None, cancel_event=None):
             callback("error", "批次总结生成失败", 100)
 
     return {"success": result is not None, "total": len(entries), "summarized": 1 if result else 0}
+

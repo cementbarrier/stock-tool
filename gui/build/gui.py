@@ -20,7 +20,7 @@ else:
 
 from tkinter import messagebox
 from backend.single_parser import parse_single
-from backend.batch_parser import batch_parse, fill_missing_summaries
+from backend.batch_parser import batch_parse, regenerate_summary_for_today
 from backend import valley_scheduler, single_summary_client, time_price_judge, task_queue_manager
 from backend.up_manager import load_up_list, save_up_list, fetch_up_name
 from backend import config_manager
@@ -46,6 +46,7 @@ from tkinter import (
     StringVar,
     Text,
     Tk,
+    Toplevel,
     ttk,
 )
 
@@ -143,7 +144,6 @@ def show_page(index):
 
 selected_save_path = ""
 batch_save_path = config_manager.get_setting("batch_save_path")
-DEFAULT_FEISHU_WEBHOOK = "https://open.feishu.cn/open-apis/bot/v2/hook/43afc324-86c7-41f7-b82c-4c9a5a2a0426"
 
 # ── 调试日志 ──
 import datetime as _dt
@@ -406,13 +406,7 @@ def _finish_parse_1(success, msg, bv="", path=""):
         # 飞书通知：单视频解析完成
         try:
             from backend.feishu_notifier import notify_single_done
-            _title = ""
-            try:
-                from backend.single_parser import _get_video_title
-                _title = _get_video_title(bv)
-            except Exception:
-                pass
-            threading.Thread(target=notify_single_done, args=(bv, _title), daemon=True).start()
+            threading.Thread(target=notify_single_done, daemon=True).start()
         except Exception:
             pass
         # 显示实时价格标签和摘要按钮
@@ -424,6 +418,51 @@ def _finish_parse_1(success, msg, bv="", path=""):
         summary_btn = getattr(_finish_parse_1, "summary_btn", None)
         if summary_btn:
             summary_btn.place(x=30, y=530, width=180, height=36)
+
+
+# ── 高峰弹窗辅助（含"今天不再提醒"复选框）──
+_peak_suppressed_today = False
+
+def _peak_dialog(title="高峰时段提醒"):
+    """返回 True=立即执行, 否则返回 False（此时应走入队延迟流程）"""
+    global _peak_suppressed_today
+    if _peak_suppressed_today:
+        return True  # 今天已抑制，静默立即执行
+    dialog = Toplevel(window)
+    dialog.title(title)
+    dialog.geometry("380x210")
+    dialog.resizable(False, False)
+    dialog.transient(window)
+    dialog.grab_set()
+    result = {"action": False, "suppress": False}
+
+    Label(dialog, text="当前为 DeepSeek 高峰时段（双倍价）。",
+          font=("Microsoft YaHei", 10), wraplength=340).pack(pady=(15, 5))
+    Label(dialog, text="「是」正常付费，「否」18点后自动处理。",
+          font=("Microsoft YaHei", 9), fg="gray").pack(pady=(0, 10))
+
+    suppress_var = BooleanVar(value=False)
+    Checkbutton(dialog, text="今天不再提醒", variable=suppress_var).pack(pady=(0, 10))
+
+    btn_frame = Frame(dialog)
+    btn_frame.pack(pady=(5, 10))
+
+    def _do_yes():
+        result["action"] = True
+        result["suppress"] = suppress_var.get()
+        dialog.destroy()
+
+    def _do_no():
+        result["action"] = False
+        result["suppress"] = suppress_var.get()
+        dialog.destroy()
+
+    Button(btn_frame, text="立即执行（是）", command=_do_yes, width=15).pack(side="left", padx=10)
+    Button(btn_frame, text="入队延迟（否）", command=_do_no, width=15).pack(side="left", padx=10)
+    dialog.wait_window()
+    if result["suppress"]:
+        _peak_suppressed_today = True
+    return result["action"]
 
 
 def button_5_clicked():
@@ -452,11 +491,7 @@ def button_5_clicked():
 
         # ── 高峰时段检查：询问是否加入低谷延迟队列 ──
         if time_price_judge.is_peak():
-            result = messagebox.askyesno(
-                "高峰时段提醒",
-                f"当前为 DeepSeek 高峰时段（双倍价）。\n"
-                f"选择「是」立即执行，「否」加入低谷延迟队列，18点后自动处理。"
-            )
+            result = _peak_dialog()
             if not result:
                 task_id = task_queue_manager.enqueue(
                     task_type="batch_parse",
@@ -566,7 +601,7 @@ def button_7_clicked():
                 window.after(0, lambda m=msg: _finish_fill_2(False, m))
 
         try:
-            result = fill_missing_summaries(
+            result = regenerate_summary_for_today(
                 batch_save_path, callback=progress_callback, cancel_event=cancel_event_2
             )
             if result.get("success"):
@@ -1091,11 +1126,7 @@ def create_main_window():
             return
 
         if time_price_judge.is_peak():
-            result = messagebox.askyesno(
-                "高峰时段提醒",
-                f"当前为 DeepSeek 高峰时段（双倍价）。\n"
-                f"选择「是」立即执行，「否」加入低谷延迟队列，18点后自动处理。"
-            )
+            result = _peak_dialog()
             if not result:
                 task_id = single_summary_client.summarize_single(
                     last_parsed_bvid, transcript, force=False
@@ -1135,7 +1166,7 @@ def create_main_window():
             # 飞书通知：摘要生成完成
             try:
                 from backend.feishu_notifier import notify_single_done
-                notify_single_done(last_parsed_bvid, "", text)
+                notify_single_done()
             except Exception:
                 pass
 
@@ -1686,6 +1717,21 @@ def create_main_window():
     )
     api_key_entry.place(x=30, y=388, width=460, height=28)
 
+    # API Key 显示/隐藏切换
+    def _toggle_api_key_visibility():
+        if api_key_entry.cget("show") == "*":
+            api_key_entry.config(show="")
+            api_key_toggle_btn.config(text="隐藏")
+        else:
+            api_key_entry.config(show="*")
+            api_key_toggle_btn.config(text="显示")
+
+    api_key_toggle_btn = Button(
+        page_frame_3, text="显示", command=_toggle_api_key_visibility,
+        bg="#F0F0F0", font=("Inter", 10), bd=1, relief="solid"
+    )
+    api_key_toggle_btn.place(x=498, y=388, width=48, height=28)
+
     canvas_page_3.create_text(30, 424, anchor="nw", text="模型名",
         fill="#000000", font=("Inter", 14 * -1, "normal"))
     model_combo = ttk.Combobox(
@@ -1851,7 +1897,7 @@ def create_main_window():
         if url:
             config_manager.set_setting("feishu_webhook", url)
         else:
-            config_manager.set_setting("feishu_webhook", DEFAULT_FEISHU_WEBHOOK)
+            config_manager.set_setting("feishu_webhook", config_manager.DEFAULTS.get("feishu_webhook", ""))
 
     feishu_webhook_entry.bind("<FocusOut>", _feishu_save_webhook)
     feishu_webhook_entry.bind("<Return>", _feishu_save_webhook)
@@ -1936,6 +1982,20 @@ def create_main_window():
 
 
 window = create_main_window()
+
+# ── 启动时检测配置损坏 ──
+_load_error_path = config_manager.CONFIG_DIR / "_load_error.log"
+if _load_error_path.exists():
+    try:
+        _err_text = _load_error_path.read_text(encoding="utf-8")
+        messagebox.showwarning(
+            "配置损坏警告",
+            f"配置文件加载失败，已回退为默认设置。\n\n"
+            f"错误详情请查看：\n{_load_error_path}\n\n"
+            f"您可以尝试在配置页重新保存设置来修复。"
+        )
+    except Exception:
+        pass
 
 # 启动低谷调度线程
 valley_scheduler.start(callback=lambda n: window.after(0, _gui_refresh_queue) if _gui_refresh_queue else None)

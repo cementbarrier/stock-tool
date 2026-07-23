@@ -9,14 +9,12 @@ from datetime import datetime
 
 logger = logging.getLogger("feishu_notifier")
 
-DEFAULT_WEBHOOK = "https://open.feishu.cn/open-apis/bot/v2/hook/43afc324-86c7-41f7-b82c-4c9a5a2a0426"
-
 
 def _get_webhook_url() -> str:
-    """获取配置的 webhook URL，未配置则返回默认值"""
-    from backend.config_manager import get_setting
+    """获取配置的 webhook URL（默认值统一由 config_manager.DEFAULTS 提供）"""
+    from backend.config_manager import get_setting, DEFAULTS
     url = get_setting("feishu_webhook")
-    return url if url else DEFAULT_WEBHOOK
+    return url if url else DEFAULTS.get("feishu_webhook", "")
 
 
 def send_text(text: str) -> bool:
@@ -119,14 +117,12 @@ def send_card(title: str, elements: list) -> bool:
         return send_text(fallback)
 
 
-def notify_single_done(bvid: str = "", title: str = "", summary: str = ""):
+def notify_single_done():
     """单视频解析完成通知"""
     return send_text("老板，视频转写好了")
 
 
-def notify_batch_done(save_dir: str = "", success_count: int = 0, total: int = 0,
-                      batch_summary_path: str | None = None,
-                      video_list: list | None = None):
+def notify_batch_done():
     """批量解析完成通知"""
     return send_text("老板，视频转写好了")
 

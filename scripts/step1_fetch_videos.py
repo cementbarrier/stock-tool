@@ -16,11 +16,11 @@ from pathlib import Path
 
 if getattr(sys, 'frozen', False):
     PROJECT_ROOT = Path(sys._MEIPASS)
-    # 持久化配置路径，与 config_manager 保持一致
-    CONFIG_DIR = Path(sys.executable).parent.parent / "config"
 else:
     PROJECT_ROOT = Path(__file__).parent.parent
-    CONFIG_DIR = PROJECT_ROOT / "config"
+
+# 统一从 config_manager 导入 CONFIG_DIR，避免多处重复计算
+from backend.config_manager import CONFIG_DIR
 from functools import reduce
 from urllib.parse import urlencode
 
