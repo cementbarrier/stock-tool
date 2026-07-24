@@ -320,7 +320,8 @@ def main(target_date=None):
             v['up_weight'] = up['weight']
 
             # 兜底：space/arc/search 的 description 可能为空，用 view API 补充
-            if not v.get('description', '').strip():
+            # 注意：用 or '' 防止 B站 API 返回 null 导致 None.strip() 异常
+            if not (v.get('description') or '').strip():
                 desc = enrich_description(v['bvid'], headers)
                 if desc:
                     v['description'] = desc
