@@ -203,11 +203,13 @@ def get_up_videos(mid, headers, target_date=None, hours=None, cancel_event=None)
             pub_ts = v.get('created', 0)
             pub_time = datetime.fromtimestamp(pub_ts)
             if day_start <= pub_time < day_end:
+                # 用 or '' 而非 get(..., '')：B站 API 可能返回 null，.get 只在 key 不存在时用默认值
+                description = v.get('description') or ''
                 recent_videos.append({
                     'aid': v.get('aid'),
                     'bvid': v.get('bvid'),
                     'title': v.get('title'),
-                    'description': v.get('description', ''),
+                    'description': description,
                     'pub_time': pub_time.strftime('%Y-%m-%d %H:%M:%S'),
                     'duration': v.get('length', ''),
                     'play': v.get('play', 0),
@@ -218,6 +220,22 @@ def get_up_videos(mid, headers, target_date=None, hours=None, cancel_event=None)
     except Exception as e:
         logger.error(f"  拉取失败 mid={mid}: {e}")
         return []
+
+
+def enrich_description(bvid, headers):
+    """兜底：通过 view API 获取视频完整简介（space/arc/search 可能返回空）"""
+    try:
+        resp = requests.get(
+            f"https://api.bilibili.com/x/web-interface/view?bvid={bvid}",
+            headers=headers, timeout=10
+        )
+        data = resp.json()
+        if data.get('code') == 0:
+            desc = data.get('data', {}).get('desc', '')
+            return desc if desc else ''
+    except Exception:
+        pass
+    return ''
 
 
 def get_up_name(mid, headers):
@@ -300,6 +318,13 @@ def main(target_date=None):
             v['up_name'] = up['name']
             v['up_mid'] = up['mid']
             v['up_weight'] = up['weight']
+
+            # 兜底：space/arc/search 的 description 可能为空，用 view API 补充
+            if not v.get('description', '').strip():
+                desc = enrich_description(v['bvid'], headers)
+                if desc:
+                    v['description'] = desc
+                    logger.info(f"  ✓ 简介已补充 ({len(desc)} 字符)")
 
             # ── 增量解析检查 ──
             bvid = v.get('bvid', '')
