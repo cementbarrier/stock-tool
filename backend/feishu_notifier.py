@@ -127,6 +127,26 @@ def notify_batch_done():
     return send_text("老板，视频转写好了")
 
 
+def send_transcript_text(text_content: str) -> bool:
+    """
+    发送转写结果文本到飞书。超长自动截断。
+
+    Args:
+        text_content: 转写文本内容
+
+    Returns:
+        True 成功，False 失败
+    """
+    if not text_content or not text_content.strip():
+        return False
+
+    max_len = 15000
+    if len(text_content) > max_len:
+        text_content = text_content[:max_len] + "…（内容过长已截断）"
+
+    return send_text(text_content)
+
+
 def test_webhook(webhook_url: str) -> tuple:
     """
     测试 webhook 是否可用。

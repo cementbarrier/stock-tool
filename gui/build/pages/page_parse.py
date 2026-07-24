@@ -101,8 +101,11 @@ def _do_summary(window, summary_result_1, summary_btn_1, price_label_1):
         summary_result_1.config(text=text)
         summary_result_1.place(x=30, y=572, width=585, height=60)
         try:
-            from backend.feishu_notifier import notify_single_done
+            from backend.feishu_notifier import notify_single_done, send_transcript_text
             notify_single_done()
+            if last_transcript_path_var:
+                with open(last_transcript_path_var, "r", encoding="utf-8") as _f:
+                    send_transcript_text(_f.read())
         except Exception:
             pass
 
@@ -138,8 +141,12 @@ def _finish_parse_1(window, success, msg, bv="", path="",
         last_parsed_bvid = bv
         last_transcript_path_var = path
         try:
-            from backend.feishu_notifier import notify_single_done
+            from backend.feishu_notifier import notify_single_done, send_transcript_text
             threading.Thread(target=notify_single_done, daemon=True).start()
+            if path:
+                with open(path, "r", encoding="utf-8") as _f:
+                    _transcript = _f.read()
+                threading.Thread(target=send_transcript_text, args=(_transcript,), daemon=True).start()
         except Exception:
             pass
         if price_label_1:

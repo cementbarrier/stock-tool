@@ -182,8 +182,12 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
 
     # ── 飞书通知 ──
     try:
-        from backend.feishu_notifier import notify_batch_done as notify_feishu_batch
+        from backend.feishu_notifier import notify_batch_done as notify_feishu_batch, send_transcript_text
         notify_feishu_batch()
+        if batch_summary_path:
+            with open(batch_summary_path, "r", encoding="utf-8") as _f:
+                _summary_text = _f.read()
+            send_transcript_text(_summary_text)
     except Exception as e:
         logger.debug(f"飞书通知失败: {e}")
 
