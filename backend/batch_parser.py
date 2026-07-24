@@ -171,7 +171,7 @@ def batch_parse(uid_list: list, save_dir: str, callback=None, cancel_event=None,
         if callback:
             callback("progress", f"转写完成，正在生成批次总结（新增 {new_count} 个视频）...", 99)
 
-    batch_summary_path = _generate_batch_summary(save_dir, summary_input)
+    batch_summary_path = _generate_batch_summary(save_dir, summary_input, effective_date)
 
     # ── 邮件通知 ──
     try:
@@ -284,14 +284,22 @@ def _save_reports(save_dir: str, result: str, json_data: dict, today: str):
     return str(report_path)
 
 
-def _generate_batch_summary(save_dir: str, transcribe_success: list) -> str | None:
+def _generate_batch_summary(save_dir: str, transcribe_success: list, effective_date=None) -> str | None:
     """
     将批次内全部转写结果一次发给 LLM，生成总结文档。
+
+    Args:
+        save_dir: 保存目录
+        transcribe_success: 转写成功列表
+        effective_date: 目标日期（datetime），默认今天
 
     Returns:
         生成的文件路径，失败返回 None
     """
     from backend.llm_client import chat
+
+    if effective_date is None:
+        effective_date = datetime.now()
 
     limit = _get_max_per_video()
     parts = []
@@ -316,7 +324,7 @@ def _generate_batch_summary(save_dir: str, transcribe_success: list) -> str | No
     if not result:
         return None
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = effective_date.strftime("%Y-%m-%d")
     json_data = _parse_summary_to_json(result, today)
     return _save_reports(save_dir, result, json_data, today)
 
